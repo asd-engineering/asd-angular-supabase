@@ -26,3 +26,6 @@ additional_redirect_urls = ["http://localhost:4200/auth/callback"]
 enable_signup = true
 double_confirm_changes = true
 enable_confirmations = false
+
+[functions.mollie-webhook]
+verify_jwt = false

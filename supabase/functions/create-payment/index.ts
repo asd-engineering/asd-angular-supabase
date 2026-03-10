@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
       })
     }
 
-    const { amount, description, redirectUrl } = await req.json()
+    const { amount, description, redirectUrl, webhookUrl } = await req.json()
     if (!amount || !redirectUrl) {
       return new Response(JSON.stringify({ error: 'amount and redirectUrl are required' }), {
         status: 400,
@@ -57,7 +57,10 @@ Deno.serve(async (req) => {
       amount: { currency: 'EUR', value: Number(amount).toFixed(2) },
       description: description || 'Payment',
       redirectUrl,
-      webhookUrl: `${Deno.env.get('SUPABASE_URL')}/functions/v1/mollie-webhook`,
+      webhookUrl:
+        webhookUrl ||
+        Deno.env.get('MOLLIE_WEBHOOK_URL') ||
+        `${Deno.env.get('SUPABASE_URL')}/functions/v1/mollie-webhook`,
       metadata: { orderId: order.id },
     })
 

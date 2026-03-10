@@ -75,6 +75,10 @@ test-e2e-webkit:
 test-e2e-report:
     pnpm exec playwright show-report
 
+# Run payment webhook E2E test (requires API_TUNNEL_URL)
+test-payment:
+    pnpm exec playwright test e2e/payment-webhook.spec.ts --project=chromium
+
 # ----------------------------------------
 # Quality Checks
 # ----------------------------------------

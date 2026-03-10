@@ -167,6 +167,15 @@ network:
       subdomain: studio
       tunnelProtocol: http
       iframe_patch: true
+    supabase:api:
+      name: Supabase API
+      dial: 127.0.0.1:54321
+      public: true
+      subdomain: api
+      tunnelPort: 54321
+      tunnelProtocol: http
+      basic_auth:
+        enabled: false
     angular:dev:
       name: ASD Angular
       dial: 127.0.0.1:4200
