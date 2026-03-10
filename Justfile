@@ -15,6 +15,18 @@ start:
 stop:
     @asd run stop
 
+# Stop all services and remove data
+down:
+    @asd run down
+
+# Run all quality checks (lint, typecheck, format, tests, duplication)
+check-all:
+    @asd run check-all
+
+# Enter ASD sandbox (Docker dev container)
+sandbox:
+    docker compose -f docker/docker-compose.yml run --rm dev
+
 # Forward all args to pnpm
 p *args:
     pnpm {{args}}
@@ -128,6 +140,10 @@ supa-reset:
 # ----------------------------------------
 # Docker
 # ----------------------------------------
+
+# Build and run production Docker image
+docker-prod:
+    docker compose -f docker/docker-compose.prod.yml up --build
 
 # Build Docker image locally
 docker-build:

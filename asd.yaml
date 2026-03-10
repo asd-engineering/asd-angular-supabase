@@ -132,6 +132,25 @@ automation:
       run: asd caddy stop
     - name: Stop Supabase
       run: npx supabase stop
+  down:
+    - name: Stop Caddy
+      run: asd caddy stop
+    - name: Stop Supabase
+      run: npx supabase stop --no-backup
+  check-all:
+    - name: Lint
+      run: pnpm lint
+    - name: Typecheck
+      run: pnpm typecheck
+    - name: Format check
+      run: pnpm format:check
+    - name: Unit tests
+      run: pnpm test:run
+    - name: Duplication check
+      run: pnpm duplication:check
+  test-e2e:
+    - name: Playwright E2E tests
+      run: pnpm exec playwright test
 tunnels:
   mode: 'caddy'
 

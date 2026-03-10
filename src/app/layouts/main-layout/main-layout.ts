@@ -15,6 +15,7 @@ import { AuthService } from '@core/services/auth.service'
           </a>
         </div>
         <div class="flex-none gap-2">
+          <a routerLink="/pricing" class="btn btn-ghost btn-sm">Pricing</a>
           @if (auth.isAuthenticated()) {
             <a routerLink="/dashboard" class="btn btn-ghost btn-sm">Dashboard</a>
             <button class="btn btn-outline btn-sm" (click)="auth.signOut()">Sign Out</button>

@@ -11,6 +11,15 @@ export const routes: Routes = [
         loadComponent: () => import('./features/home/home').then((m) => m.Home),
       },
       {
+        path: 'pricing',
+        loadComponent: () => import('./features/pricing/pricing').then((m) => m.Pricing),
+      },
+      {
+        path: 'payment/callback',
+        loadComponent: () =>
+          import('./features/payment/payment-callback').then((m) => m.PaymentCallback),
+      },
+      {
         path: 'dashboard',
         canActivate: [authGuard],
         loadChildren: () =>

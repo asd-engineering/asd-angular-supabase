@@ -9,6 +9,10 @@ export const dashboardRoutes: Routes = [
         path: 'settings',
         loadComponent: () => import('./settings/settings').then((m) => m.Settings),
       },
+      {
+        path: 'orders',
+        loadComponent: () => import('./orders/orders').then((m) => m.Orders),
+      },
     ],
   },
 ]

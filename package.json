@@ -42,6 +42,8 @@
   },
   "devDependencies": {
     "@analogjs/vitest-angular": "^2.2.3",
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
     "@angular-eslint/builder": "^21.2.0",
     "@angular-eslint/eslint-plugin": "^21.2.0",
     "@angular-eslint/eslint-plugin-template": "^21.2.0",
