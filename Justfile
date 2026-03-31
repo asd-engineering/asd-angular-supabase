@@ -37,15 +37,15 @@ p *args:
 
 # Run unit tests (watch mode)
 test:
-    pnpm test
+    @asd run test
 
 # Run unit tests once (CI mode)
 test-run:
-    pnpm test:run
+    @asd run test-run
 
 # Run unit tests with coverage
 test-coverage:
-    pnpm test:coverage
+    @asd run test-coverage
 
 # Run Playwright E2E tests (headless)
 test-e2e *args:
@@ -53,27 +53,27 @@ test-e2e *args:
 
 # Run Playwright tests with visible browser
 test-e2e-headed:
-    pnpm exec playwright test --headed
+    @asd run test-e2e-headed
 
 # Run Playwright tests with UI mode
 test-e2e-ui:
-    pnpm exec playwright test --ui
+    @asd run test-e2e-ui
 
 # Run Playwright tests on Chromium only
 test-e2e-chromium:
-    pnpm exec playwright test --project=chromium
+    @asd run test-e2e-chromium
 
 # Run Playwright tests on Firefox only
 test-e2e-firefox:
-    pnpm exec playwright test --project=firefox
+    @asd run test-e2e-firefox
 
 # Run Playwright tests on WebKit only
 test-e2e-webkit:
-    pnpm exec playwright test --project=webkit
+    @asd run test-e2e-webkit
 
 # View Playwright test report
 test-e2e-report:
-    pnpm exec playwright show-report
+    @asd run test-e2e-report
 
 # Run payment webhook E2E test (requires API_TUNNEL_URL)
 test-payment:
@@ -85,25 +85,23 @@ test-payment:
 
 # Run linting
 lint:
-    pnpm lint
+    @asd run lint
 
 # Run TypeScript type checking
 typecheck:
-    pnpm typecheck
+    @asd run typecheck
 
 # Auto-format code
 format:
-    pnpm format
+    @asd run format
 
 # Check code formatting (no changes)
 format-check:
-    pnpm format:check
+    @asd run format-check
 
 # Run all quality checks
 check:
-    pnpm lint
-    pnpm typecheck
-    pnpm format:check
+    @asd run check
 
 # ----------------------------------------
 # Code Duplication
@@ -111,11 +109,11 @@ check:
 
 # Full duplication analysis with HTML report
 duplication:
-    pnpm duplication
+    @asd run duplication
 
 # Check duplication threshold (CI mode)
 duplication-check:
-    pnpm duplication:check
+    @asd run duplication-check
 
 # ----------------------------------------
 # Supabase
@@ -123,23 +121,23 @@ duplication-check:
 
 # Start local Supabase
 supa-start:
-    npx supabase start
+    @asd run supa-start
 
 # Stop local Supabase
 supa-stop:
-    npx supabase stop
+    @asd run supa-stop
 
 # Check Supabase status
 supa-status:
-    npx supabase status
+    @asd run supa-status
 
 # Generate TypeScript types from local database
 supa-types-local:
-    npx supabase gen types typescript --local > src/app/core/types/database.types.ts
+    @asd run supa-types-local
 
 # Reset local database (re-runs all migrations)
 supa-reset:
-    npx supabase db reset
+    @asd run supa-reset
 
 # ----------------------------------------
 # Docker

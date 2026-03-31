@@ -3,11 +3,11 @@ project:
   name: asd-angular-supabase
   description: Angular + Supabase boilerplate with ASD platform integration
   domain: localhost
+  env_template: 'tpl.env'
   project_root: angular:dev
   plugins:
     - supabase
   hub:
-    iframe_patch: true
     globalSettings:
       theme: light
       widgetStoreUrl: []
@@ -60,15 +60,6 @@ project:
                 rows: 6
                 type: iframe
                 serviceId: ttyd
-    serviceTemplates:
-      default:
-        type: iframe
-        maxInstances: 1
-        config:
-          minColumns: 1
-          maxColumns: 8
-          minRows: 1
-          maxRows: 6
     styling:
       widget:
         minColumns: 1
@@ -78,11 +69,9 @@ project:
 features:
   auto_detect_services: false
   auto_install_binaries: true
-  justfile_integration: false
   ingress_header: true
   enable_restricted_ports: false
   hub_visibility: public
-  auto_install_modules: true
   auto_start_caddy: true
   auto_start_ttyd: true
   auto_start_codeserver: true
@@ -101,12 +90,12 @@ automation:
       command: ASD_NO_PROMPT=1 asd ttyd start
       background: true
       skipWhen:
-        port: ${{ env.TTYD_PORT }}
+        port: ${{ env.ASD_TTYD_PORT }}
     - name: Start code-server
       command: asd code start
       background: true
       skipWhen:
-        port: ${{ env.CODE_PORT }}
+        port: ${{ env.ASD_CODESERVER_PORT }}
     - name: Start dev server
       command: pnpm dev
       background: true
@@ -131,7 +120,7 @@ automation:
     - name: Stop Caddy
       run: asd caddy stop
     - name: Stop Supabase
-      run: npx supabase stop
+      run: asd supabase stop
   down:
     - name: Stop Caddy
       run: asd caddy stop
@@ -151,6 +140,59 @@ automation:
   test-e2e:
     - name: Playwright E2E tests
       run: pnpm exec playwright test
+
+  # Quality
+  lint:
+    - run: pnpm lint
+  typecheck:
+    - run: pnpm typecheck
+  format:
+    - run: pnpm format
+  format-check:
+    - run: pnpm format:check
+  check:
+    - run: pnpm lint
+    - run: pnpm typecheck
+    - run: pnpm format:check
+
+  # Testing
+  test:
+    - run: pnpm test
+  test-run:
+    - run: pnpm test:run
+  test-coverage:
+    - run: pnpm test:coverage
+  test-e2e-headed:
+    - run: pnpm exec playwright test --headed
+  test-e2e-ui:
+    - run: pnpm exec playwright test --ui
+  test-e2e-chromium:
+    - run: pnpm exec playwright test --project=chromium
+  test-e2e-firefox:
+    - run: pnpm exec playwright test --project=firefox
+  test-e2e-webkit:
+    - run: pnpm exec playwright test --project=webkit
+  test-e2e-report:
+    - run: pnpm exec playwright show-report
+
+  # Duplication
+  duplication:
+    - run: pnpm duplication
+  duplication-check:
+    - run: pnpm duplication:check
+
+  # Supabase
+  supa-start:
+    - run: asd supabase start
+  supa-stop:
+    - run: asd supabase stop
+  supa-status:
+    - run: npx supabase status
+  supa-reset:
+    - run: npx supabase db reset
+  supa-types-local:
+    - run: npx supabase gen types typescript --local > src/app/core/types/database.types.ts
+
 tunnels:
   mode: 'caddy'
 
@@ -166,7 +208,6 @@ network:
       tunnelPort: 54323
       subdomain: studio
       tunnelProtocol: http
-      iframe_patch: true
     supabase:api:
       name: Supabase API
       dial: 127.0.0.1:54321
@@ -186,7 +227,6 @@ network:
       tunnelPort: 4200
       subdomain: app
       tunnelProtocol: http
-      iframe_patch: true
       process:
         cmd: pnpm dev
         cwd: .
@@ -194,7 +234,5 @@ network:
       description: Angular development server - main frontend
     codeserver:
       public: false
-      iframe_patch: true
     ttyd:
       public: false
-      iframe_patch: true
