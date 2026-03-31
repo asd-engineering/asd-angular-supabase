@@ -64,7 +64,8 @@
         "serve": {
           "builder": "@angular/build:dev-server",
           "options": {
-            "port": 4200
+            "port": 4200,
+            "allowedHosts": [".localhost", ".asd.engineer"]
           },
           "configurations": {
             "production": {
