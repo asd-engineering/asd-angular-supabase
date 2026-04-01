@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (and other AI agents) working with th
 
 ## Project Setup
 
-> **Claude:** If `project_setup_done` is missing from your memory, read `docs/ai/first-time-setup.md` and run the setup flow. Otherwise, use the stored values from memory.
+> **Claude:** If `project_setup_done` is missing from your memory, read `.claude/first-time-setup.md` and run the setup flow. Otherwise, use the stored values from memory.
 
 ## Install ASD CLI
 
