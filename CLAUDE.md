@@ -52,8 +52,7 @@ The ASD CLI has built-in commands that expose its own documentation to AI agents
 - **Payments:** Mollie (edge functions + webhook via ASD tunnel)
 - **Testing:** Vitest (unit) + Playwright (E2E)
 - **Package Manager:** pnpm 10+
-- **Task Runner:** Just (see Justfile)
-- **Orchestration:** ASD CLI (global `asd` binary)
+- **Orchestration:** ASD CLI (global `asd` binary, tasks defined in `asd.yaml`)
 
 ## ASD Vault Injection — AI-Safe Credential Management
 
@@ -115,12 +114,12 @@ Vault is an **optional ASD add-on**. Without it, the project works normally with
 
 ## ASD Orchestration
 
-### Full-Stack Development with `just dev`
+### Full-Stack Development with `asd run dev`
 
 A single command starts the entire stack:
 
 ```bash
-just dev   # equivalent to: asd run dev
+asd run dev
 ```
 
 This executes the `dev` automation sequence defined in `asd.yaml`:
@@ -200,20 +199,19 @@ https://{prefix}api-{client_id}.{tunnel_host}/functions/v1/mollie-webhook
 ### Commands
 
 ```bash
-just test-payment     # Run payment E2E locally (requires tunnel + Mollie key)
+pnpm exec playwright test e2e/payment-webhook.spec.ts --project=chromium  # Local (requires tunnel + Mollie key)
 ```
 
 The `payment-e2e.yml` GitHub Action runs this automatically on push/PR when `MOLLIE_API_KEY` and `ASD_API_KEY` secrets are configured.
 
 ## DevInCi Cloud IDE
 
-Launch a full cloud development environment from CI:
+Launch a full cloud development environment from CI via the `devinci.yml` GitHub Action. Manage sessions with the `gh` CLI:
 
 ```bash
-just devinci          # Trigger cloud IDE workflow
-just devinci-active   # List active sessions
-just devinci-watch    # Watch most recent session
-just devinci-stop     # Stop most recent session
+gh workflow run devinci.yml -f username="USER" -f password="PASS"  # Trigger
+gh run list --workflow=devinci.yml --status=in_progress              # List active
+gh run watch $(gh run list --workflow=devinci.yml --limit 1 --json databaseId -q '.[0].databaseId')  # Watch
 ```
 
 ### What Gets Started
@@ -243,64 +241,64 @@ Three build targets in `docker/Dockerfile`:
 | `build` | `node:22-bookworm`      | CI build verification             |
 | `prod`  | `node:22-bookworm-slim` | SSR production server (port 4000) |
 
-### Commands
+### Docker Commands
 
 ```bash
-just sandbox          # Enter ASD sandbox (Docker dev container)
-just docker-prod      # Build and run production image
-just docker-build     # Build Docker image with auto-versioned tag
-just docker-release   # Build + push to registry
+docker compose -f docker/docker-compose.yml run --rm dev   # Enter ASD sandbox
+docker compose -f docker/docker-compose.prod.yml up --build # Build and run production image
 ```
 
 ## Commands
+
+All tasks are defined in `asd.yaml` and run via `asd run <task>`. A Justfile is included as a thin wrapper for convenience but `asd run` is the primary interface.
 
 ### Development
 
 ```bash
 pnpm install          # Install dependencies
-pnpm dev              # Start Angular dev server (port 4200)
-just dev              # Start full stack via asd.yaml (Supabase + Caddy + Angular)
-just start            # Start infrastructure only
-just stop             # Stop all services
+pnpm dev              # Start Angular dev server only (port 4200)
+asd run dev           # Start full stack (Supabase + Caddy + Angular + ttyd + code-server)
+asd run start         # Start infrastructure only (Supabase + Caddy)
+asd run stop          # Stop all services
+asd run down          # Stop all services and remove data
 ```
 
 ### Testing
 
 ```bash
-pnpm test             # Unit tests (watch mode)
-pnpm test:run         # Unit tests (CI mode)
-pnpm test:coverage    # Unit tests with coverage (enforces thresholds)
+asd run test          # Unit tests (watch mode)
+asd run test-run      # Unit tests (CI mode)
+asd run test-coverage # Unit tests with coverage (enforces thresholds)
 
-just test-e2e         # Playwright E2E tests
-just test-e2e-chromium # Chromium only
-just test-e2e-ui      # Playwright UI mode
-just test-payment     # Payment E2E (requires tunnel)
+asd run test-e2e           # Playwright E2E tests (all browsers)
+asd run test-e2e-chromium  # Chromium only
+asd run test-e2e-ui        # Playwright UI mode
 ```
 
 ### Quality Checks
 
 ```bash
-pnpm lint             # ESLint
-pnpm typecheck        # TypeScript type checking
-pnpm format           # Auto-format with Prettier
-pnpm format:check     # Check formatting
-just check            # Run all quality checks
-just check-all        # Lint + typecheck + format + tests + duplication
+asd run lint          # ESLint
+asd run typecheck     # TypeScript type checking
+asd run format        # Auto-format with Prettier
+asd run format-check  # Check formatting
+asd run check         # Lint + typecheck + format
+asd run check-all     # Lint + typecheck + format + tests + duplication
 ```
 
 ### Supabase
 
 ```bash
-just supa-start       # Start local Supabase
-just supa-stop        # Stop local Supabase
-just supa-status      # Check status
-just supa-types-local # Regenerate database.types.ts
-just supa-reset       # Reset database
+asd run supa-start       # Start local Supabase
+asd run supa-stop        # Stop local Supabase
+asd run supa-status      # Check status
+asd run supa-types-local # Regenerate database.types.ts
+asd run supa-reset       # Reset database
 ```
 
 ### Mailpit (Local Email Testing)
 
-Supabase local includes Mailpit for capturing auth emails (signup confirmations, password resets, magic links). No configuration needed — it runs automatically with `just supa-start`.
+Supabase local includes Mailpit for capturing auth emails (signup confirmations, password resets, magic links). No configuration needed — it runs automatically with `asd run supa-start`.
 
 - **Web UI**: `http://localhost:54324` — browse all captured emails
 - **SMTP**: `localhost:54325` — Supabase Auth sends emails here automatically

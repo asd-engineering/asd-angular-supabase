@@ -13,6 +13,10 @@ Capture baseline screenshots of every page in the ASD Angular Supabase app, then
 
 `http://localhost:4200`
 
+## Skill Maintenance
+
+**This skill file must be kept up to date by Claude.** When you encounter selectors or page structures that no longer match, or new pages are added to the app, update this SKILL.md immediately. Outdated skills waste time — fix them as you find them.
+
 ## Baseline Storage
 
 ```

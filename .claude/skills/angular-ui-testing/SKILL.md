@@ -312,6 +312,10 @@ async function screenshotPage(page, name) {
 }
 ```
 
+## Skill Maintenance
+
+**This skill file must be kept up to date by Claude.** When you encounter selectors or patterns that no longer work, or discover new reusable steps for common flows, update this SKILL.md immediately. Outdated skills waste time — fix them as you find them.
+
 ## Selector Strategy
 
 This app uses semantic HTML, DaisyUI classes, and `#id` attributes. Recommended approach by priority:

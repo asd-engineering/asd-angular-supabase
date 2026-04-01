@@ -13,6 +13,10 @@ Simulate end-to-end user journeys through the ASD Angular Supabase app using MCP
 
 `http://localhost:4200`
 
+## Skill Maintenance
+
+**This skill file must be kept up to date by Claude.** When you encounter selectors or journey steps that no longer work, or discover new reusable patterns for common user flows, update this SKILL.md immediately. Outdated skills waste time — fix them as you find them.
+
 ## Available Journeys
 
 | Journey     | Description                                          |
