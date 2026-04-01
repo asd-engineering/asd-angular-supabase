@@ -66,6 +66,7 @@ project:
         maxColumns: 8
         minRows: 1
         maxRows: 6
+
 features:
   auto_detect_services: false
   auto_install_binaries: true
@@ -75,6 +76,7 @@ features:
   auto_start_caddy: true
   auto_start_ttyd: true
   auto_start_codeserver: true
+
 automation:
   dev:
     - name: Bootstrap Supabase
@@ -106,6 +108,7 @@ automation:
         expectStatus: 200
     - name: Display hub URL
       run: asd hub url
+
   start:
     - name: Bootstrap Supabase
       run: asd supabase bootstrap
@@ -121,11 +124,13 @@ automation:
       run: asd caddy stop
     - name: Stop Supabase
       run: asd supabase stop
+
   down:
     - name: Stop Caddy
       run: asd caddy stop
     - name: Stop Supabase
       run: npx supabase stop --no-backup
+
   check-all:
     - name: Lint
       run: pnpm lint
@@ -137,6 +142,7 @@ automation:
       run: pnpm test:run
     - name: Duplication check
       run: pnpm duplication:check
+
   test-e2e:
     - name: Playwright E2E tests
       run: pnpm exec playwright test
@@ -206,17 +212,19 @@ network:
     supabase:studio:
       public: true
       tunnelPort: 54323
-      subdomain: studio
+      subdomain: ${{ env.ENV_PREFIX }}studio
       tunnelProtocol: http
+
     supabase:api:
       name: Supabase API
       dial: 127.0.0.1:54321
       public: true
-      subdomain: api
+      subdomain: ${{ env.ENV_PREFIX }}api
       tunnelPort: 54321
       tunnelProtocol: http
       basic_auth:
         enabled: false
+
     angular:dev:
       name: ASD Angular
       dial: 127.0.0.1:4200
@@ -225,7 +233,7 @@ network:
       stripPrefix: false
       public: true
       tunnelPort: 4200
-      subdomain: app
+      subdomain: ${{ env.ENV_PREFIX }}app
       tunnelProtocol: http
       process:
         cmd: pnpm dev
