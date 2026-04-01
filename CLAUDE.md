@@ -6,6 +6,44 @@ This file provides guidance to Claude Code (and other AI agents) working with th
 
 **ASD Angular Supabase** is a production-grade Angular boilerplate with Supabase integration, Tailwind CSS 4, DaisyUI 5, and full ASD platform orchestration. It demonstrates how the ASD platform handles service discovery, tunnel networking, credential management, and cloud IDEs — all from a single `asd.yaml` config file.
 
+## Install ASD CLI
+
+**Linux / macOS:**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/asd-engineering/asd-cli/main/install.sh | bash
+```
+
+**Windows (PowerShell):**
+
+```powershell
+irm https://raw.githubusercontent.com/asd-engineering/asd-cli/main/install.ps1 | iex
+```
+
+Verify installation:
+
+```bash
+asd --version
+```
+
+## ASD AI Knowledge Commands
+
+The ASD CLI has built-in commands that expose its own documentation to AI agents at runtime. **Prefer these over static docs** — they are always in sync with the installed version.
+
+| Command                | Purpose                                                                                     |
+| ---------------------- | ------------------------------------------------------------------------------------------- |
+| `asd rules`            | Behavioral rules for AI agents — routing, auth, abstraction, naming conventions             |
+| `asd rules <category>` | Filter rules by category (e.g., `asd rules routing`, `asd rules auth`)                      |
+| `asd schema`           | Config field reference derived from Zod `.describe()` — every `asd.yaml` and manifest field |
+| `asd schema --ai`      | Extended reference including external tool docs and npm links                               |
+| `asd flow`             | Visualize the template-to-`.env` data pipeline: how `tpl.env` → macro expansion → `.env`    |
+
+**When to use:**
+
+- **`asd schema`** — before editing `asd.yaml` or `net.manifest.yaml`, to see all available fields and their types
+- **`asd flow`** — to understand how env vars are resolved: module `tpl.env` → package `tpl.env` → defaults file → existing `.env` (merge order)
+- **`asd rules`** — before making architectural decisions about routing, auth, or service naming
+
 ## Tech Stack
 
 - **Frontend:** Angular 21+ with SSR, standalone components, signals
