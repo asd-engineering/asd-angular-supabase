@@ -8,10 +8,28 @@ on:
   workflow_dispatch:
 
 jobs:
+  check-secrets:
+    runs-on: ubuntu-latest
+    outputs:
+      has-secrets: ${{ steps.check.outputs.has-secrets }}
+    steps:
+      - id: check
+        env:
+          MOLLIE_API_KEY: ${{ secrets.MOLLIE_API_KEY }}
+          ASD_API_KEY: ${{ secrets.ASD_API_KEY }}
+        run: |
+          if [ -n "$MOLLIE_API_KEY" ] && [ -n "$ASD_API_KEY" ]; then
+            echo "has-secrets=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has-secrets=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping: MOLLIE_API_KEY and/or ASD_API_KEY not configured"
+          fi
+
   payment-e2e:
+    needs: check-secrets
+    if: ${{ needs.check-secrets.outputs.has-secrets == 'true' || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    if: ${{ github.event_name == 'workflow_dispatch' || (secrets.MOLLIE_API_KEY != '' && secrets.ASD_API_KEY != '') }}
     steps:
       - uses: actions/checkout@v4
 
@@ -157,5 +175,5 @@ jobs:
       - name: Cleanup
         if: always()
         run: |
-          asd expose stop --all || true
           asd caddy stop || true
+          asd tunnel server stop || true
