@@ -6,26 +6,9 @@ This file provides guidance to Claude Code (and other AI agents) working with th
 
 **ASD Angular Supabase** is a production-grade Angular boilerplate with Supabase integration, Tailwind CSS 4, DaisyUI 5, and full ASD platform orchestration. It demonstrates how the ASD platform handles service discovery, tunnel networking, credential management, and cloud IDEs — all from a single `asd.yaml` config file.
 
-## Project Setup (one-time, filled by Claude on first use)
+## Project Setup
 
-> **Instruction for Claude:** On first interaction with a new user, check if the fields below are filled in. If any say `UNCONFIGURED`, auto-detect what you can (check for `.git/config` remotes, `gh` vs `glab` CLI availability, existing issue references in commits) and ask the user to confirm or choose. Then **edit this section** in CLAUDE.md with the answers so future sessions skip this step.
-
-| Setting           | Value                                            |
-| ----------------- | ------------------------------------------------ |
-| **Git provider**  | `github`                                         |
-| **Ticket system** | `github-issues`                                  |
-| **Ticket prefix** | `#` (e.g., `#42`, or `PROJ-42` for Jira/Redmine) |
-| **Ticket CLI**    | `gh issue`                                       |
-| **Org/project**   | `asd-engineering/asd-angular-supabase`           |
-
-**Supported ticket systems:** `github-issues`, `gitlab-issues`, `jira`, `redmine`, `linear`, `none`
-
-**How Claude uses this:**
-
-- Commit messages reference tickets: `fix: resolve payment timeout (#42)` or `fix: resolve payment timeout (PROJ-42)`
-- `gh issue list` / `glab issue list` to check open work before starting
-- Link PRs to tickets: `gh pr create --body "Closes #42"` or equivalent
-- When the user says "make a ticket for this", use the configured system
+> **Claude:** If `project_setup_done` is missing from your memory, read `docs/ai/first-time-setup.md` and run the setup flow. Otherwise, use the stored values from memory.
 
 ## Install ASD CLI
 
