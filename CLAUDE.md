@@ -1,20 +1,218 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code when working with code in this repository.
+This file provides guidance to Claude Code (and other AI agents) working with this repository. It also serves as an introduction to the ASD platform's capabilities for prospective customers.
 
 ## Overview
 
-**ASD Angular Supabase** is a production-grade Angular boilerplate with Supabase integration, Tailwind CSS 4, DaisyUI 5, and full ASD platform orchestration. Uses the global `asd` binary (no `.asd/` submodule).
+**ASD Angular Supabase** is a production-grade Angular boilerplate with Supabase integration, Tailwind CSS 4, DaisyUI 5, and full ASD platform orchestration. It demonstrates how the ASD platform handles service discovery, tunnel networking, credential management, and cloud IDEs — all from a single `asd.yaml` config file.
 
 ## Tech Stack
 
 - **Frontend:** Angular 21+ with SSR, standalone components, signals
 - **Styling:** Tailwind CSS 4 + DaisyUI 5 (ASD brand system)
 - **Database/Auth:** Supabase (PostgreSQL + Auth)
+- **Payments:** Mollie (edge functions + webhook via ASD tunnel)
 - **Testing:** Vitest (unit) + Playwright (E2E)
 - **Package Manager:** pnpm 10+
 - **Task Runner:** Just (see Justfile)
 - **Orchestration:** ASD CLI (global `asd` binary)
+
+## ASD Vault Injection — AI-Safe Credential Management
+
+### The Problem
+
+AI agents need to run applications that require credentials (API keys, database URLs, payment secrets). Storing raw secrets in `.env` files means any agent with file access can read them. ASD Vault solves this by injecting credentials at runtime without ever writing them to disk.
+
+### How It Works
+
+Template files (`tpl.env`) use `asd://` references instead of raw values:
+
+```bash
+# tpl.env — safe to commit, safe for AI to read
+MOLLIE_API_KEY=asd://payments/MOLLIE_API_KEY
+SUPABASE_SERVICE_ROLE_KEY=asd://database/SERVICE_ROLE_KEY
+```
+
+The ASD CLI resolves these references at runtime:
+
+```bash
+# Store a secret in the vault
+asd vault store payments/MOLLIE_API_KEY "live_xxxxxxxxxx"
+
+# Run a command with vault-injected env vars
+asd vault run -- pnpm dev
+
+# List stored secrets (shows keys, not values)
+asd vault list
+```
+
+### Three-Tier Encryption
+
+1. **Server-side encryption** — secrets encrypted at rest on the ASD tunnel server
+2. **Scope key** — each project/scope has its own encryption key
+3. **Passphrase** — optional user passphrase for additional protection
+
+### Graceful Fallback
+
+Vault is an **optional ASD add-on**. Without it, the project works normally with `.env` files — vault just adds the AI-safety layer. No hard dependency.
+
+- If `asd vault run` is available, secrets are injected from vault
+- If not, the standard `.env` file is used (manual secret management)
+- `tpl.env` always works as a plain template regardless of vault availability
+
+### Comparison: Credential Management Approaches
+
+| Approach      | AI Can Read? | Rotatable? | Audit Trail? | Works in CI?              |
+| ------------- | ------------ | ---------- | ------------ | ------------------------- |
+| `.env` files  | Yes (unsafe) | Manual     | No           | Copy/paste                |
+| GH Secrets    | No           | Yes        | Limited      | Yes                       |
+| **ASD Vault** | **No**       | **Yes**    | **Yes**      | **Yes (`asd vault run`)** |
+
+### Rules for AI Agents
+
+- **Never** write raw secrets to files — use `asd vault store` or environment variables
+- **Never** log or print secret values — use `asd vault list` to verify keys exist
+- `tpl.env` and `asd.yaml` are safe to read and modify — they contain references, not values
+- Use `asd vault run` to inject secrets when running commands that need them
+
+## ASD Orchestration
+
+### Full-Stack Development with `just dev`
+
+A single command starts the entire stack:
+
+```bash
+just dev   # equivalent to: asd run dev
+```
+
+This executes the `dev` automation sequence defined in `asd.yaml`:
+
+1. **Bootstrap Supabase** — starts local PostgreSQL, Auth, Storage, Edge Functions
+2. **Start Caddy** — reverse proxy with automatic TLS
+3. **Wait for Caddy** — health check on admin API
+4. **Apply network config** — registers services, seeds auth rules, connects tunnels
+5. **Start ttyd** — browser terminal (background, skipped if port in use)
+6. **Start code-server** — VS Code in browser (background, skipped if port in use)
+7. **Start Angular dev server** — `pnpm dev` on port 4200 (background, skipped if running)
+8. **Wait for Angular** — HTTP health check
+9. **Display hub URL** — opens the ASD Hub dashboard
+
+### Network Services
+
+All services are routed through Caddy for TLS termination and auth:
+
+| Service         | Local URL         | Tunnel Subdomain | Auth             |
+| --------------- | ----------------- | ---------------- | ---------------- |
+| Angular app     | `app.localhost`   | `{prefix}app`    | Public           |
+| Supabase API    | `127.0.0.1:54321` | `{prefix}api`    | Public (API key) |
+| Supabase Studio | `127.0.0.1:54323` | `{prefix}studio` | Public           |
+| code-server     | Internal          | Private          | Caddy basic auth |
+| ttyd            | Internal          | Private          | Caddy basic auth |
+
+### ENV_PREFIX for Multi-Instance Routing
+
+Set `ENV_PREFIX` in `.env` to create unique tunnel subdomains per instance:
+
+```bash
+ENV_PREFIX=dev1-    # Produces: dev1-app-kelvin.eu1.tn.asd.engineer
+ENV_PREFIX=staging- # Produces: staging-app-kelvin.eu1.tn.asd.engineer
+```
+
+### Hub Views
+
+The ASD Hub provides a unified dashboard with four views:
+
+- **App** — iframe embedding the Angular dev server
+- **Studio** — Supabase Studio for database management
+- **Code Studio** — VS Code (code-server) in the browser
+- **Terminal** — ttyd browser terminal
+
+## Mollie Payment Integration
+
+### Architecture
+
+Two Supabase Edge Functions handle the payment flow:
+
+- **`create-payment`** — JWT-authenticated, creates a Mollie payment and stores an order
+- **`mollie-webhook`** — No JWT (Mollie calls it), receives `application/x-www-form-urlencoded` POST with payment ID, verifies status via Mollie API, updates order
+
+### Webhook Delivery via ASD Tunnel
+
+In development/CI, Mollie needs to reach your local Supabase instance. ASD tunnels make this possible:
+
+```
+Mollie servers → ASD tunnel → Caddy → Supabase Edge Functions
+```
+
+The webhook URL is constructed from the tunnel domain:
+
+```
+https://{prefix}api-{client_id}.{tunnel_host}/functions/v1/mollie-webhook
+```
+
+### E2E Test Flow
+
+1. Create test user via Supabase Admin API
+2. Sign in to get JWT access token
+3. Call `create-payment` edge function with tunnel webhook URL
+4. Navigate to Mollie test checkout → select "Paid"
+5. Mollie POSTs to webhook via tunnel → edge function updates order status
+6. Poll database to verify order status changed to `paid`
+
+### Commands
+
+```bash
+just test-payment     # Run payment E2E locally (requires tunnel + Mollie key)
+```
+
+The `payment-e2e.yml` GitHub Action runs this automatically on push/PR when `MOLLIE_API_KEY` and `ASD_API_KEY` secrets are configured.
+
+## DevInCi Cloud IDE
+
+Launch a full cloud development environment from CI:
+
+```bash
+just devinci          # Trigger cloud IDE workflow
+just devinci-active   # List active sessions
+just devinci-watch    # Watch most recent session
+just devinci-stop     # Stop most recent session
+```
+
+### What Gets Started
+
+- **ttyd** — browser terminal for running commands
+- **code-server** — VS Code in the browser
+- **Caddy** — reverse proxy with basic auth (auto-generated credentials)
+- **ASD tunnel** — public HTTPS access to all services
+
+### Cross-Platform Support
+
+| Platform                    | code-server | ttyd | Basic Auth |
+| --------------------------- | ----------- | ---- | ---------- |
+| Linux (ubuntu-latest)       | Yes         | Yes  | 401/302    |
+| macOS (macos-latest, ARM64) | Yes         | N/A  | 401/302    |
+| Windows (windows-latest)    | No          | Yes  | 401/200    |
+
+## Docker Infrastructure
+
+### Multi-Stage Dockerfile
+
+Three build targets in `docker/Dockerfile`:
+
+| Target  | Base Image              | Purpose                           |
+| ------- | ----------------------- | --------------------------------- |
+| `dev`   | `asd-sandbox:latest`    | Full ASD toolkit for development  |
+| `build` | `node:22-bookworm`      | CI build verification             |
+| `prod`  | `node:22-bookworm-slim` | SSR production server (port 4000) |
+
+### Commands
+
+```bash
+just sandbox          # Enter ASD sandbox (Docker dev container)
+just docker-prod      # Build and run production image
+just docker-build     # Build Docker image with auto-versioned tag
+just docker-release   # Build + push to registry
+```
 
 ## Commands
 
@@ -33,11 +231,12 @@ just stop             # Stop all services
 ```bash
 pnpm test             # Unit tests (watch mode)
 pnpm test:run         # Unit tests (CI mode)
-pnpm test:coverage    # Unit tests with coverage
+pnpm test:coverage    # Unit tests with coverage (enforces thresholds)
 
 just test-e2e         # Playwright E2E tests
 just test-e2e-chromium # Chromium only
 just test-e2e-ui      # Playwright UI mode
+just test-payment     # Payment E2E (requires tunnel)
 ```
 
 ### Quality Checks
@@ -48,6 +247,7 @@ pnpm typecheck        # TypeScript type checking
 pnpm format           # Auto-format with Prettier
 pnpm format:check     # Check formatting
 just check            # Run all quality checks
+just check-all        # Lint + typecheck + format + tests + duplication
 ```
 
 ### Supabase
@@ -75,6 +275,8 @@ src/app/
 ├── features/          # Feature routes (lazy-loaded)
 │   ├── auth/          # Login, signup, callback
 │   ├── home/          # Public home page
+│   ├── pricing/       # Plan selection + Mollie checkout
+│   ├── payment/       # Payment callback page
 │   └── dashboard/     # Protected dashboard + settings
 ├── layouts/           # Page layouts
 │   ├── main-layout/   # Header + footer + content
@@ -92,27 +294,36 @@ src/app/
 
 ### Key Patterns
 
-- **Standalone components** - No NgModules, all components are standalone
-- **Signals** - Use Angular signals for reactive state
-- **Lazy loading** - All feature routes are lazy-loaded
-- **Functional guards** - `authGuard` is a `CanActivateFn`
-- **SSR with client-side auth** - Dashboard and auth callback use `RenderMode.Client`
+- **Standalone components** — No NgModules, all components are standalone
+- **Signals** — Angular signals for reactive state
+- **Lazy loading** — All feature routes are lazy-loaded
+- **Functional guards** — `authGuard` is a `CanActivateFn`
+- **SSR with client-side auth** — Dashboard and auth callback use `RenderMode.Client`
 
 ### Environment Files
 
-- `src/environments/environment.ts` - Production config
-- `src/environments/environment.development.ts` - Local development (auto-replaced in prod builds)
+- `src/environments/environment.ts` — Production config
+- `src/environments/environment.development.ts` — Local development (auto-replaced in prod builds)
+- `tpl.env` — Template with vault references and placeholders (safe to commit)
+- `.env` — Local overrides (gitignored, generated by `asd init`)
 
 ## CI/CD
 
 GitHub Actions workflows in `.github/workflows/`:
 
-- `build.yml` - Build check
-- `linting.yml` - ESLint + TypeScript type checking
-- `format.yml` - Prettier check
-- `tests.yml` - Vitest unit tests
-- `duplication.yml` - jscpd threshold check
-- `playwright-e2e.yml` - Playwright E2E tests
+| Workflow             | Trigger          | Secrets Required                |
+| -------------------- | ---------------- | ------------------------------- |
+| `build.yml`          | push/PR          | None                            |
+| `linting.yml`        | push/PR          | None                            |
+| `format.yml`         | push/PR          | None                            |
+| `tests.yml`          | push/PR          | None                            |
+| `duplication.yml`    | push/PR          | None                            |
+| `playwright-e2e.yml` | push/PR          | None                            |
+| `payment-e2e.yml`    | push/PR + manual | `MOLLIE_API_KEY`, `ASD_API_KEY` |
+| `docker.yml`         | push/PR          | None                            |
+| `devinci.yml`        | manual           | `ASD_API_KEY`                   |
+
+Workflows that require secrets are gated with `if` conditions — they skip gracefully in forks or when secrets aren't configured.
 
 ## Git Conventions
 

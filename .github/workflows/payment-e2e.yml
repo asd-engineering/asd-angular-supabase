@@ -1,12 +1,17 @@
 name: Payment E2E (Mollie Webhook via Tunnel)
 
 on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 jobs:
   payment-e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    if: ${{ github.event_name == 'workflow_dispatch' || (secrets.MOLLIE_API_KEY != '' && secrets.ASD_API_KEY != '') }}
     steps:
       - uses: actions/checkout@v4
 

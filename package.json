@@ -8,7 +8,7 @@
     "serve:ssr": "node dist/asd-angular-supabase/server/server.mjs",
     "test": "ng test",
     "test:run": "ng test --watch=false",
-    "test:coverage": "ng test --watch=false --code-coverage",
+    "test:coverage": "ng test --watch=false --coverage",
     "lint": "ng lint",
     "lint:fix": "ng lint --fix",
     "format": "prettier --write \"src/**/*.{ts,html,css,json,md}\"",
