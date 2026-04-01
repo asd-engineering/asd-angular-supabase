@@ -28,8 +28,8 @@ Simulate end-to-end user journeys through the ASD Angular Supabase app using MCP
 ### Home (`/`)
 
 - Hero heading: `h1.text-5xl`
-- Get Started CTA: `a.btn.btn-primary[href="/auth/login"]`
-- Dashboard CTA: `a.btn.btn-outline[href="/dashboard"]`
+- Get Started CTA: `.hero-content a.btn.btn-primary` (scoped — navbar also has `btn-primary`)
+- Dashboard CTA: `.hero-content a.btn.btn-outline[href="/dashboard"]`
 
 ### Auth Login (`/auth/login`)
 
@@ -55,7 +55,7 @@ Simulate end-to-end user journeys through the ASD Angular Supabase app using MCP
 - Page heading: `h1` (text: "Pricing")
 - Pricing cards: `.card.bg-base-200` (3 cards: Starter/Pro/Enterprise)
 - Plan names: `h2.card-title` (text: "Starter", "Pro", "Enterprise")
-- Prices: `span.text-4xl.font-bold` (text: "€9", "€29", "€99")
+- Prices: `span.text-4xl.font-bold` (text: "€9", "€29", "€99") — use exact match (`getByText('€9', { exact: true })`) to avoid `€9` matching `€99`
 - Buy buttons: `.card-actions button.btn.btn-primary` (text: "Get Started")
 - Error alert: `.alert.alert-error`
 
@@ -63,7 +63,7 @@ Simulate end-to-end user journeys through the ASD Angular Supabase app using MCP
 
 - Card title: `h1.card-title` (text: "Payment Submitted")
 - View Orders button: `a.btn.btn-primary[href="/dashboard/orders"]`
-- Back to Home button: `a.btn.btn-ghost[href="/"]`
+- Back to Home button: `.card-body a.btn.btn-ghost:has-text("Back to Home")` (scoped — navbar logo also has `btn-ghost href="/"`)
 
 ### Dashboard (`/dashboard`)
 
@@ -91,11 +91,11 @@ Simulate end-to-end user journeys through the ASD Angular Supabase app using MCP
 
 ### Navigation (Main Layout)
 
-- Logo: `a.btn.btn-ghost.text-xl[href="/"]`
-- Pricing link: `a.btn[href="/pricing"]` (text: "Pricing")
-- Dashboard link: `a.btn[href="/dashboard"]` (text: "Dashboard") (authenticated only)
-- Sign Out button: `button.btn.btn-outline` (text: "Sign Out") (authenticated only)
-- Sign In link: `a.btn.btn-primary[href="/auth/login"]` (text: "Sign In") (unauthenticated only)
+- Logo: `.navbar a.btn.btn-ghost.text-xl` (in `.flex-1`)
+- Pricing link: `.navbar a.btn.btn-ghost.btn-sm:has-text("Pricing")` (in `.flex-none`)
+- Dashboard link: `.navbar a.btn.btn-ghost.btn-sm:has-text("Dashboard")` (authenticated only)
+- Sign Out button: `.navbar button.btn.btn-outline.btn-sm:has-text("Sign Out")` (authenticated only)
+- Sign In link: `.navbar a.btn.btn-primary.btn-sm:has-text("Sign In")` (unauthenticated only)
 - Footer: `footer` (text: "Built with ASD Platform")
 
 ## Execution Protocol
@@ -161,6 +161,27 @@ Steps 5-7 from the full journey (requires existing account).
 ## Journey: `dashboard`
 
 Steps 5-9 from the full journey (requires existing account).
+
+## Selector Strategy
+
+DaisyUI button classes repeat across navbar and page content. Always scope with a parent container to avoid strict mode violations:
+
+| Element        | Wrong (ambiguous)                   | Correct (scoped)                                  |
+| -------------- | ----------------------------------- | ------------------------------------------------- |
+| Hero CTA       | `a.btn-primary[href="/auth/login"]` | `.hero-content a.btn-primary`                     |
+| Navbar Sign In | `a.btn-primary[href="/auth/login"]` | `.navbar a.btn-primary.btn-sm`                    |
+| Back to Home   | `a.btn-ghost[href="/"]`             | `.card-body a.btn-ghost:has-text("Back to Home")` |
+| Navbar logo    | `a.btn-ghost[href="/"]`             | `.navbar a.btn-ghost.text-xl`                     |
+
+## Local Email Testing (Mailpit)
+
+Supabase local includes Mailpit for capturing auth emails:
+
+- **Web UI**: `http://localhost:54324`
+- **SMTP**: `localhost:54325`
+- **API**: `http://localhost:54324/api/v1/messages`
+
+Use after signup to verify confirmation emails are sent.
 
 ## Angular-Specific Notes
 

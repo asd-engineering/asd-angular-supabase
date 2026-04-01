@@ -178,6 +178,14 @@ Viewport: 1400x900
 Result: 1 of 9 pages changed
 ```
 
+## Selector Strategy
+
+DaisyUI button classes repeat across navbar and page content. When clicking elements during capture flows, scope selectors with parent containers:
+
+- Hero CTA: `.hero-content a.btn-primary` (not `a.btn-primary[href="/auth/login"]`)
+- Navbar buttons: `.navbar a.btn-sm` or `.navbar button.btn-sm`
+- Card actions: `.card-body a.btn-ghost:has-text("Back to Home")`
+
 ## Notes
 
 - Always use the same viewport (1400x900) for consistency
@@ -186,3 +194,4 @@ Result: 1 of 9 pages changed
 - Toast notifications are hidden before capture to avoid false positives
 - DaisyUI theme changes will cause all pages to fail diff - this is expected and desired
 - The `data-theme` attribute is checked and recorded to catch unintentional theme changes
+- **Mailpit** (`http://localhost:54324`): Supabase local email capture — useful for verifying auth emails after signup in visual tests

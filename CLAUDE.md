@@ -298,6 +298,19 @@ just supa-types-local # Regenerate database.types.ts
 just supa-reset       # Reset database
 ```
 
+### Mailpit (Local Email Testing)
+
+Supabase local includes Mailpit for capturing auth emails (signup confirmations, password resets, magic links). No configuration needed — it runs automatically with `just supa-start`.
+
+- **Web UI**: `http://localhost:54324` — browse all captured emails
+- **SMTP**: `localhost:54325` — Supabase Auth sends emails here automatically
+- **REST API**: `http://localhost:54324/api/v1/messages` — query emails programmatically
+
+```bash
+# Fetch latest email (useful in E2E tests)
+curl -s http://localhost:54324/api/v1/messages?limit=1 | jq '.messages[0].Subject'
+```
+
 ## Architecture
 
 ### Project Structure

@@ -56,7 +56,7 @@ async function signup(page, email, password) {
 ```javascript
 async function signOut(page) {
   // From any page with the main layout navbar
-  await page.click('button.btn.btn-outline:has-text("Sign Out")')
+  await page.click('.navbar button.btn.btn-outline.btn-sm:has-text("Sign Out")')
   await page.waitForURL('**/')
 }
 ```
@@ -67,7 +67,7 @@ async function signOut(page) {
 async function isAuthenticated(page) {
   // Check if navbar shows "Dashboard" link (only visible when authenticated)
   return page
-    .locator('a.btn:has-text("Dashboard")')
+    .locator('.navbar a.btn.btn-ghost.btn-sm:has-text("Dashboard")')
     .isVisible({ timeout: 2000 })
     .catch(() => false)
 }
@@ -312,10 +312,44 @@ async function screenshotPage(page, name) {
 }
 ```
 
+## Selector Strategy
+
+This app uses semantic HTML, DaisyUI classes, and `#id` attributes. Recommended approach by priority:
+
+1. **`#id` selectors** — `#email`, `#password` (unique, most stable)
+2. **Role + text** — `getByRole('heading', { name: 'Pricing' })` (Playwright best practice)
+3. **Scoped CSS class** — `.hero-content .btn-primary` (use parent context to disambiguate)
+4. **Text matchers** — `:has-text("Get Started")`, `getByText('Sign In')` (readable, fragile if copy changes)
+
+**Strict mode pitfalls** — DaisyUI button classes repeat across navbar and page content. Always scope with a parent container:
+
+| Element        | Wrong (ambiguous)                   | Correct (scoped)                                  |
+| -------------- | ----------------------------------- | ------------------------------------------------- |
+| Hero CTA       | `a.btn-primary[href="/auth/login"]` | `.hero-content a.btn-primary`                     |
+| Navbar Sign In | `a.btn-primary[href="/auth/login"]` | `.navbar a.btn-primary.btn-sm`                    |
+| Back to Home   | `a.btn-ghost[href="/"]`             | `.card-body a.btn-ghost:has-text("Back to Home")` |
+| Navbar logo    | `a.btn-ghost[href="/"]`             | `.navbar a.btn-ghost.text-xl`                     |
+
 ## Angular-Specific Notes
 
-- **No data-testid attributes**: This app uses semantic HTML, IDs, CSS classes, and text content for element selection. Prefer `:has-text()`, `#id`, and `.class` selectors.
 - **Client-rendered routes** (`/dashboard/**`, `/auth/callback`, `/payment/callback`): These bootstrap Angular on the client. Add `waitForLoadState('networkidle')` + element waits.
 - **Prerendered routes** (`/`, `/pricing`, `/auth/login`, `/auth/signup`): HTML is served pre-rendered. Elements are immediately available but Angular hydration may cause brief flicker.
 - **Signals**: The app uses Angular signals. State changes are synchronous within the zone, but async operations (Supabase calls) need explicit waits.
 - **DaisyUI themes**: The app uses `data-theme` on `<html>`. Theme can affect visual tests. Check with `document.documentElement.getAttribute('data-theme')`.
+
+## Local Email Testing (Mailpit)
+
+Supabase local includes Mailpit for capturing auth emails (signup confirmations, password resets):
+
+- **Web UI**: `http://localhost:54324`
+- **SMTP**: `localhost:54325`
+- **API**: `http://localhost:54324/api/v1/messages`
+
+```javascript
+// Check for auth confirmation email after signup
+async function getLatestEmail() {
+  const res = await fetch('http://localhost:54324/api/v1/messages?limit=1')
+  const data = await res.json()
+  return data.messages?.[0] // { subject, from, to, text, html }
+}
+```
