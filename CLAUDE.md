@@ -378,6 +378,15 @@ GitHub Actions workflows in `.github/workflows/`:
 
 Workflows that require secrets are gated with `if` conditions — they skip gracefully in forks or when secrets aren't configured.
 
+## Hooks (AI Safety)
+
+Project-level hooks in `.claude/hooks/` guard risky operations:
+
+- **asd-guard.sh** — prompts before `asd expose` or `asd net apply --tunnel` (internet exposure)
+- **inject-ai-session.sh** — adds AI session audit trail to ticket creation
+
+Global hooks (`~/.claude/hooks/`) provide additional guards for git and GitHub operations.
+
 ## Git Conventions
 
 - No "Co-Authored-By" in commit messages

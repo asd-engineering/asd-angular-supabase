@@ -40,6 +40,30 @@ git remote get-url origin | sed 's/.*[:/]\([^/]*\/[^/]*\)\.git/\1/'
 
 Present detected values and ask user to confirm or override.
 
+### 5. Configure Ticket Hooks
+
+Based on the detected ticket system, add the appropriate hook to `.claude/settings.json`:
+
+- **github-issues**: No extra config needed — the shared `inject-ai-session.sh` hook already handles Bash commands. Global `public-post-guard.sh` guards `gh` commands.
+- **gitlab-issues**: No extra config needed — same Bash hook covers `glab` commands.
+- **redmine**: Add an MCP matcher to `.claude/settings.json` for `mcp__pma__redmine_create_ticket` with `inject-ai-session.sh`.
+- **jira/linear**: Ask user for MCP tool name or CLI command pattern, configure accordingly.
+
+For Redmine, add this entry to the `PreToolUse` array in `.claude/settings.json`:
+
+```json
+{
+  "matcher": "mcp__pma__redmine_create_ticket",
+  "hooks": [
+    {
+      "type": "command",
+      "command": ".claude/hooks/inject-ai-session.sh",
+      "timeout": 5
+    }
+  ]
+}
+```
+
 ## How Claude Uses This Config
 
 - **Commit messages** reference tickets: `fix: resolve payment timeout (#42)` or `fix: resolve payment timeout (PROJ-42)`
@@ -58,5 +82,6 @@ After setup, store in Claude memory:
 - Ticket prefix: #
 - Ticket CLI: gh issue
 - Org/project: asd-engineering/asd-angular-supabase
+- hooks_configured: true
 - project_setup_done: true
 ```
