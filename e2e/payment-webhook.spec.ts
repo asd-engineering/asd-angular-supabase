@@ -14,7 +14,6 @@ const HAS_TUNNEL_ENV = !!(
   API_TUNNEL_URL
 )
 
-const TEST_EMAIL = 'payment-test@example.com'
 const TEST_PASSWORD = 'test-password-12345'
 
 /** Webhook URL unique per CI run (SHA prevents conflicts across parallel runs) */
@@ -32,21 +31,32 @@ test.describe('Payment webhook via ASD tunnel', () => {
 
   let accessToken: string
   let userId: string
+  let testEmail: string
 
-  test.beforeAll(async () => {
+  test.beforeAll(async ({}, testInfo) => {
+    testEmail = `payment-test-${testInfo.project.name}@example.com`
+
     const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false },
     })
 
+    // Clean up from previous runs
+    const { data: existing } = await adminClient.auth.admin.listUsers()
+    const oldUser = existing?.users?.find((u) => u.email === testEmail)
+    if (oldUser) {
+      await adminClient.from('orders').delete().eq('user_id', oldUser.id)
+      await adminClient.auth.admin.deleteUser(oldUser.id)
+    }
+
     await adminClient.auth.admin.createUser({
-      email: TEST_EMAIL,
+      email: testEmail,
       password: TEST_PASSWORD,
       email_confirm: true,
     })
 
     const anonClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
     const { data: signIn, error: signInError } = await anonClient.auth.signInWithPassword({
-      email: TEST_EMAIL,
+      email: testEmail,
       password: TEST_PASSWORD,
     })
 
