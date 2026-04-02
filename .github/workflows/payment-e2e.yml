@@ -45,6 +45,11 @@ jobs:
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
 
+      - name: Configure Mollie API key for edge functions
+        run: |
+          mkdir -p supabase/functions
+          echo "MOLLIE_API_KEY=${{ secrets.MOLLIE_API_KEY }}" > supabase/functions/.env
+
       - name: Start Supabase
         run: npx supabase start
 
@@ -63,10 +68,6 @@ jobs:
           echo "api_url=$(echo "$STATUS" | jq -r '.API_URL')" >> "$GITHUB_OUTPUT"
           echo "anon_key=$(echo "$STATUS" | jq -r '.ANON_KEY')" >> "$GITHUB_OUTPUT"
           echo "service_role_key=$(echo "$STATUS" | jq -r '.SERVICE_ROLE_KEY')" >> "$GITHUB_OUTPUT"
-
-      - name: Configure Mollie API key for edge functions
-        run: |
-          echo "MOLLIE_API_KEY=${{ secrets.MOLLIE_API_KEY }}" > supabase/.env.local
 
       - name: Install ASD CLI
         run: |
