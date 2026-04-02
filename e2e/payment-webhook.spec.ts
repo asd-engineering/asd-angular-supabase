@@ -48,11 +48,14 @@ test.describe('Payment webhook via ASD tunnel', () => {
       await adminClient.auth.admin.deleteUser(oldUser.id)
     }
 
-    await adminClient.auth.admin.createUser({
+    const { data: created, error: createError } = await adminClient.auth.admin.createUser({
       email: testEmail,
       password: TEST_PASSWORD,
       email_confirm: true,
     })
+
+    if (createError) throw new Error(`Create user failed: ${createError.message}`)
+    console.log(`Created test user: ${testEmail} (${created.user.id})`)
 
     const anonClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
     const { data: signIn, error: signInError } = await anonClient.auth.signInWithPassword({
@@ -60,7 +63,8 @@ test.describe('Payment webhook via ASD tunnel', () => {
       password: TEST_PASSWORD,
     })
 
-    if (signInError) throw new Error(`Sign in failed: ${signInError.message}`)
+    if (signInError)
+      throw new Error(`Sign in failed for ${testEmail} at ${SUPABASE_URL}: ${signInError.message}`)
     accessToken = signIn.session!.access_token
     userId = signIn.user!.id
   })
