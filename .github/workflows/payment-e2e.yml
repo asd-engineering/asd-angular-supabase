@@ -70,7 +70,7 @@ jobs:
 
       - name: Install ASD CLI
         run: |
-          curl -fsSL https://asd.host/install.sh | bash
+          curl -fsSL https://asd.host/install.sh | VERSION=v2.4.2-beta.2 bash
           asd --version
 
       - name: Provision tunnel credentials
