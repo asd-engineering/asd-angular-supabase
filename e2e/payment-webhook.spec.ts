@@ -176,7 +176,12 @@ test.describe('Payment webhook via ASD tunnel', () => {
     // Navigate to Mollie test checkout page
     await page.goto(checkoutUrl)
 
-    // Mollie test mode shows a status selection page — select "Paid"
+    // Step 1: Select a payment method (Mollie shows Card, iDEAL, etc.)
+    const cardMethod = page.locator('text=Card').first()
+    await expect(cardMethod).toBeVisible({ timeout: 10_000 })
+    await cardMethod.click()
+
+    // Step 2: Mollie test mode shows a status selection page — select "Paid"
     const paidButton = page
       .locator('button, input, [data-status="paid"], a')
       .filter({ hasText: /paid/i })
@@ -184,8 +189,7 @@ test.describe('Payment webhook via ASD tunnel', () => {
     await expect(paidButton).toBeVisible({ timeout: 10_000 })
     await paidButton.click()
 
-    await page.waitForTimeout(3_000)
-
+    // Step 3: Confirm if needed
     const continueButton = page
       .locator('button, input, a')
       .filter({ hasText: /continue|confirm|submit/i })
