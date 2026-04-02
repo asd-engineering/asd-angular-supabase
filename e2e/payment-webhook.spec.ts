@@ -204,21 +204,11 @@ test.describe('Payment webhook via ASD tunnel', () => {
       await page.waitForLoadState('networkidle')
     }
 
-    // Step 3: After card submit, Mollie test mode may show a status selection page
-    const paidButton = page
-      .locator('button, input, [data-status="paid"], a, label, div[role="button"]')
-      .filter({ hasText: /paid/i })
-      .first()
-    if (await paidButton.isVisible({ timeout: 10_000 }).catch(() => false)) {
-      await paidButton.click()
-      const confirmButton = page
-        .locator('button, input[type="submit"], a')
-        .filter({ hasText: /continue|confirm|submit/i })
-        .first()
-      if (await confirmButton.isVisible({ timeout: 5_000 }).catch(() => false)) {
-        await confirmButton.click()
-      }
-    }
+    // Step 3: Mollie test mode shows status selection with radio buttons
+    const paidRadio = page.getByRole('radio', { name: 'Paid' })
+    await expect(paidRadio).toBeVisible({ timeout: 15_000 })
+    await paidRadio.check()
+    await page.getByRole('button', { name: /continue/i }).click()
 
     // Poll DB for status change (Mollie webhook should update via tunnel)
     const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
