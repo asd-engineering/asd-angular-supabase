@@ -81,6 +81,8 @@ automation:
   dev:
     - name: Bootstrap Supabase
       run: asd supabase bootstrap
+      skipWhen:
+        port: 54322
     - name: Start Caddy
       run: asd caddy start
     - httpWaitFor:
@@ -106,12 +108,14 @@ automation:
     - httpWaitFor:
         url: 'http://127.0.0.1:4200'
         expectStatus: 200
-    - name: Display hub URL
-      run: asd hub url
+    - name: Display services
+      run: asd service list
 
   start:
     - name: Bootstrap Supabase
       run: asd supabase bootstrap
+      skipWhen:
+        port: 54322
     - name: Start Caddy
       run: asd caddy start
     - httpWaitFor:
@@ -214,16 +218,6 @@ network:
       tunnelPort: 54323
       subdomain: ${{ env.ENV_PREFIX }}studio
       tunnelProtocol: http
-
-    supabase:api:
-      name: Supabase API
-      dial: 127.0.0.1:54321
-      public: true
-      subdomain: ${{ env.ENV_PREFIX }}api
-      tunnelPort: 54321
-      tunnelProtocol: http
-      basic_auth:
-        enabled: false
 
     angular:dev:
       name: ASD Angular
