@@ -41,12 +41,11 @@ jobs:
           done
 
       - name: Get Supabase credentials
-        id: supabase
         run: |
           STATUS=$(npx supabase status --output json)
-          echo "api_url=$(echo "$STATUS" | jq -r '.API_URL')" >> "$GITHUB_OUTPUT"
-          echo "anon_key=$(echo "$STATUS" | jq -r '.ANON_KEY')" >> "$GITHUB_OUTPUT"
-          echo "service_role_key=$(echo "$STATUS" | jq -r '.SERVICE_ROLE_KEY')" >> "$GITHUB_OUTPUT"
+          echo "SUPABASE_URL=$(echo "$STATUS" | jq -r '.API_URL')" >> "$GITHUB_ENV"
+          echo "SUPABASE_ANON_KEY=$(echo "$STATUS" | jq -r '.ANON_KEY')" >> "$GITHUB_ENV"
+          echo "SUPABASE_SERVICE_ROLE_KEY=$(echo "$STATUS" | jq -r '.SERVICE_ROLE_KEY')" >> "$GITHUB_ENV"
 
       # ── General E2E ─────────────────────────────────────────────
 
@@ -138,6 +137,7 @@ jobs:
             echo "API_TUNNEL_URL not resolved in .env — macro may have failed"
             exit 1
           fi
+          echo "API_TUNNEL_URL=${API_TUNNEL_URL}" >> "$GITHUB_ENV"
           echo "Polling $API_TUNNEL_URL ..."
           for i in $(seq 1 30); do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$API_TUNNEL_URL" || echo "000")
