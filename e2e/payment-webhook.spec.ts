@@ -182,32 +182,49 @@ test.describe('Payment webhook via ASD tunnel', () => {
     const cardMethod = page.locator('text=Card').first()
     await expect(cardMethod).toBeVisible({ timeout: 15_000 })
     await cardMethod.click()
+    await page.waitForLoadState('networkidle')
 
-    // Step 2: Submit method selection (Mollie requires a continue/pay button click)
-    const submitMethod = page
-      .locator('button, input[type="submit"], a')
-      .filter({ hasText: /continue|pay|submit|next/i })
+    // Step 2: Mollie shows a card entry form — fill with test card data
+    const cardNumberInput = page
+      .locator('input')
+      .filter({ hasText: /1234/ })
+      .or(page.locator('[placeholder*="1234"]'))
       .first()
-    if (await submitMethod.isVisible({ timeout: 5_000 }).catch(() => false)) {
-      await submitMethod.click()
+    const hasCardForm = await cardNumberInput.isVisible({ timeout: 5_000 }).catch(() => false)
+
+    if (hasCardForm) {
+      await cardNumberInput.fill('3782 822463 10005')
+      const expiryInput = page.locator('[placeholder*="MM"]').first()
+      await expiryInput.fill('12/30')
+      const cvcInput = page.locator('[placeholder="CVC"], [placeholder="123"]').first()
+      await cvcInput.fill('123')
+      const cardHolder = page.locator('[placeholder*="name"], [placeholder*="card holder"]').first()
+      if (await cardHolder.isVisible().catch(() => false)) {
+        await cardHolder.fill('Test User')
+      }
+      const payButton = page
+        .locator('button')
+        .filter({ hasText: /pay with card/i })
+        .first()
+      await expect(payButton).toBeVisible({ timeout: 5_000 })
+      await payButton.click()
       await page.waitForLoadState('networkidle')
     }
 
-    // Step 3: Mollie test mode shows a status selection page — select "Paid"
+    // Step 3: After card submit, Mollie test mode may show a status selection page
     const paidButton = page
       .locator('button, input, [data-status="paid"], a, label, div[role="button"]')
-      .filter({ hasText: /^paid$/i })
+      .filter({ hasText: /paid/i })
       .first()
-    await expect(paidButton).toBeVisible({ timeout: 15_000 })
-    await paidButton.click()
-
-    // Step 4: Confirm status selection
-    const confirmButton = page
-      .locator('button, input[type="submit"], a')
-      .filter({ hasText: /continue|confirm|submit/i })
-      .first()
-    if (await confirmButton.isVisible({ timeout: 5_000 }).catch(() => false)) {
-      await confirmButton.click()
+    if (await paidButton.isVisible({ timeout: 10_000 }).catch(() => false)) {
+      await paidButton.click()
+      const confirmButton = page
+        .locator('button, input[type="submit"], a')
+        .filter({ hasText: /continue|confirm|submit/i })
+        .first()
+      if (await confirmButton.isVisible({ timeout: 5_000 }).catch(() => false)) {
+        await confirmButton.click()
+      }
     }
 
     // Poll DB for status change (Mollie webhook should update via tunnel)
