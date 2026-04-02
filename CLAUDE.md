@@ -136,7 +136,7 @@ This executes the `dev` automation sequence defined in `asd.yaml`:
 6. **Start code-server** — VS Code in browser (background, skipped if port in use)
 7. **Start Angular dev server** — `pnpm dev` on port 4200 (background, skipped if running)
 8. **Wait for Angular** — HTTP health check
-9. **Display hub URL** — opens the ASD Hub dashboard
+9. **Display services** — lists configured services and their ports
 
 ### Network Services
 
