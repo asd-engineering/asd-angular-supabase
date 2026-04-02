@@ -176,27 +176,38 @@ test.describe('Payment webhook via ASD tunnel', () => {
 
     // Navigate to Mollie test checkout page
     await page.goto(checkoutUrl)
+    await page.waitForLoadState('networkidle')
 
     // Step 1: Select a payment method (Mollie shows Card, iDEAL, etc.)
     const cardMethod = page.locator('text=Card').first()
-    await expect(cardMethod).toBeVisible({ timeout: 10_000 })
+    await expect(cardMethod).toBeVisible({ timeout: 15_000 })
     await cardMethod.click()
 
-    // Step 2: Mollie test mode shows a status selection page — select "Paid"
-    const paidButton = page
-      .locator('button, input, [data-status="paid"], a')
-      .filter({ hasText: /paid/i })
+    // Step 2: Submit method selection (Mollie requires a continue/pay button click)
+    const submitMethod = page
+      .locator('button, input[type="submit"], a')
+      .filter({ hasText: /continue|pay|submit|next/i })
       .first()
-    await expect(paidButton).toBeVisible({ timeout: 10_000 })
+    if (await submitMethod.isVisible({ timeout: 5_000 }).catch(() => false)) {
+      await submitMethod.click()
+      await page.waitForLoadState('networkidle')
+    }
+
+    // Step 3: Mollie test mode shows a status selection page — select "Paid"
+    const paidButton = page
+      .locator('button, input, [data-status="paid"], a, label, div[role="button"]')
+      .filter({ hasText: /^paid$/i })
+      .first()
+    await expect(paidButton).toBeVisible({ timeout: 15_000 })
     await paidButton.click()
 
-    // Step 3: Confirm if needed
-    const continueButton = page
-      .locator('button, input, a')
+    // Step 4: Confirm status selection
+    const confirmButton = page
+      .locator('button, input[type="submit"], a')
       .filter({ hasText: /continue|confirm|submit/i })
       .first()
-    if (await continueButton.isVisible({ timeout: 5_000 }).catch(() => false)) {
-      await continueButton.click()
+    if (await confirmButton.isVisible({ timeout: 5_000 }).catch(() => false)) {
+      await confirmButton.click()
     }
 
     // Poll DB for status change (Mollie webhook should update via tunnel)

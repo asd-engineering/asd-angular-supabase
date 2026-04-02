@@ -161,7 +161,9 @@ jobs:
         if: ${{ !cancelled() }}
         with:
           name: playwright-report-${{ matrix.project }}
-          path: playwright-report/
+          path: |
+            playwright-report/
+            test-results/
           retention-days: 30
 
       - name: Cleanup
