@@ -1,14 +1,16 @@
-name: Playwright E2E
+name: E2E Tests
 
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   e2e:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -21,10 +23,15 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps ${{ matrix.project }}
+
       - name: Start Supabase
+        env:
+          MOLLIE_API_KEY: ${{ secrets.MOLLIE_API_KEY }}
         run: npx supabase start
+
       - name: Wait for Supabase
         run: |
           for i in $(seq 1 30); do
@@ -32,11 +39,135 @@ jobs:
             echo "Attempt $i/30 - waiting 2s..."
             sleep 2
           done
-      - name: Run Playwright tests
+
+      - name: Get Supabase credentials
+        id: supabase
+        run: |
+          STATUS=$(npx supabase status --output json)
+          echo "api_url=$(echo "$STATUS" | jq -r '.API_URL')" >> "$GITHUB_OUTPUT"
+          echo "anon_key=$(echo "$STATUS" | jq -r '.ANON_KEY')" >> "$GITHUB_OUTPUT"
+          echo "service_role_key=$(echo "$STATUS" | jq -r '.SERVICE_ROLE_KEY')" >> "$GITHUB_OUTPUT"
+
+      # ── General E2E ─────────────────────────────────────────────
+
+      - name: Run general E2E tests
         run: pnpm exec playwright test --project=${{ matrix.project }} --grep-invert='Payment webhook'
+
+      # ── Payment E2E (requires MOLLIE_API_KEY + ASD_API_KEY) ────
+
+      - name: Check payment secrets
+        id: secrets
+        env:
+          MOLLIE_API_KEY: ${{ secrets.MOLLIE_API_KEY }}
+          ASD_API_KEY: ${{ secrets.ASD_API_KEY }}
+        run: |
+          if [ -n "$MOLLIE_API_KEY" ] && [ -n "$ASD_API_KEY" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping payment tests: MOLLIE_API_KEY and/or ASD_API_KEY not configured"
+          fi
+
+      - name: Install ASD CLI
+        if: steps.secrets.outputs.available == 'true'
+        run: |
+          curl -fsSL https://asd.host/install.sh | VERSION=v2.4.2-beta.2 bash
+          asd --version
+
+      - name: Provision tunnel credentials
+        if: steps.secrets.outputs.available == 'true'
+        run: |
+          HTTP_RESPONSE=$(curl -s -w "\n%{http_code}" "https://api.asd.host/functions/v1/credential-provision" \
+            -H "X-API-Key: ${{ secrets.ASD_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"project\": \"${{ github.repository }}\",
+              \"ttl_minutes\": 30,
+              \"metadata\": {
+                \"ci_run_id\": \"${{ github.run_id }}\",
+                \"ci_repository\": \"${{ github.repository }}\",
+                \"ci_platform\": \"github\"
+              }
+            }")
+          HTTP_CODE=$(echo "$HTTP_RESPONSE" | tail -1)
+          RESPONSE=$(echo "$HTTP_RESPONSE" | sed '$d')
+
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+            echo "Failed to provision credentials (HTTP $HTTP_CODE)"
+            echo "Response: $RESPONSE"
+            exit 1
+          fi
+
+          ASD_CLIENT_ID=$(echo "$RESPONSE" | jq -r '.tunnel_client_id')
+          ASD_CLIENT_SECRET=$(echo "$RESPONSE" | jq -r '.tunnel_client_secret')
+          ASD_TUNNEL_HOST=$(echo "$RESPONSE" | jq -r '.tunnel_fqdn // .tunnel_host')
+          ASD_TUNNEL_PORT=$(echo "$RESPONSE" | jq -r '.tunnel_port')
+
+          echo "::add-mask::$ASD_CLIENT_SECRET"
+
+          echo "ASD_CLIENT_ID=$ASD_CLIENT_ID" >> "$GITHUB_ENV"
+          echo "ASD_CLIENT_SECRET=$ASD_CLIENT_SECRET" >> "$GITHUB_ENV"
+          echo "ASD_TUNNEL_HOST=$ASD_TUNNEL_HOST" >> "$GITHUB_ENV"
+          echo "ASD_TUNNEL_PORT=$ASD_TUNNEL_PORT" >> "$GITHUB_ENV"
+
+          echo "Provisioned: client_id=$ASD_CLIENT_ID, host=$ASD_TUNNEL_HOST:$ASD_TUNNEL_PORT"
+
+      - name: Initialize ASD and write tunnel credentials
+        if: steps.secrets.outputs.available == 'true'
+        run: |
+          asd init --yes
+          cat >> .env <<'ENVEOF'
+          ASD_CLIENT_ID=${{ env.ASD_CLIENT_ID }}
+          ASD_CLIENT_SECRET=${{ env.ASD_CLIENT_SECRET }}
+          ASD_TUNNEL_HOST=${{ env.ASD_TUNNEL_HOST }}
+          ASD_TUNNEL_PORT=${{ env.ASD_TUNNEL_PORT }}
+          ENVEOF
+
+      - name: Start Caddy and apply network config
+        if: steps.secrets.outputs.available == 'true'
+        run: |
+          asd caddy start
+          asd net apply --seed --caddy --tunnel
+
+      - name: Wait for tunnel to be reachable
+        if: steps.secrets.outputs.available == 'true'
+        id: tunnel
+        run: |
+          API_TUNNEL_URL="https://api-${{ env.ASD_CLIENT_ID }}.${{ env.ASD_TUNNEL_HOST }}/"
+          echo "api_tunnel_url=$API_TUNNEL_URL" >> "$GITHUB_OUTPUT"
+          echo "Polling $API_TUNNEL_URL ..."
+          for i in $(seq 1 30); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$API_TUNNEL_URL" || echo "000")
+            echo "Attempt $i/30 - HTTP $STATUS"
+            if [ "$STATUS" != "000" ] && [ "$STATUS" != "502" ] && [ "$STATUS" != "503" ]; then
+              echo "Tunnel reachable!"
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "Tunnel not reachable after 30 attempts"
+          exit 1
+
+      - name: Run payment E2E tests
+        if: steps.secrets.outputs.available == 'true'
+        env:
+          SUPABASE_URL: ${{ steps.supabase.outputs.api_url }}
+          SUPABASE_ANON_KEY: ${{ steps.supabase.outputs.anon_key }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ steps.supabase.outputs.service_role_key }}
+          API_TUNNEL_URL: ${{ steps.tunnel.outputs.api_tunnel_url }}
+        run: pnpm exec playwright test e2e/payment-webhook.spec.ts --project=${{ matrix.project }}
+
+      # ── Reports & cleanup ──────────────────────────────────────
+
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
           name: playwright-report-${{ matrix.project }}
           path: playwright-report/
           retention-days: 30
+
+      - name: Cleanup
+        if: always()
+        run: |
+          asd caddy stop 2>/dev/null || true
+          asd tunnel server stop 2>/dev/null || true

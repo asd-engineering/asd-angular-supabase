@@ -206,7 +206,7 @@ https://{prefix}api-{client_id}.{tunnel_host}/functions/v1/mollie-webhook
 pnpm exec playwright test e2e/payment-webhook.spec.ts --project=chromium  # Local (requires tunnel + Mollie key)
 ```
 
-The `payment-e2e.yml` GitHub Action runs this automatically on push/PR when `MOLLIE_API_KEY` and `ASD_API_KEY` secrets are configured.
+The `playwright-e2e.yml` workflow runs payment E2E automatically after general tests when `MOLLIE_API_KEY` and `ASD_API_KEY` secrets are configured.
 
 ## DevInCi Cloud IDE
 
@@ -364,17 +364,16 @@ src/app/
 
 GitHub Actions workflows in `.github/workflows/`:
 
-| Workflow             | Trigger          | Secrets Required                |
-| -------------------- | ---------------- | ------------------------------- |
-| `build.yml`          | push/PR          | None                            |
-| `linting.yml`        | push/PR          | None                            |
-| `format.yml`         | push/PR          | None                            |
-| `tests.yml`          | push/PR          | None                            |
-| `duplication.yml`    | push/PR          | None                            |
-| `playwright-e2e.yml` | push/PR          | None                            |
-| `payment-e2e.yml`    | push/PR + manual | `MOLLIE_API_KEY`, `ASD_API_KEY` |
-| `docker.yml`         | push/PR          | None                            |
-| `devinci.yml`        | manual           | `ASD_API_KEY`                   |
+| Workflow             | Trigger          | Secrets Required                                |
+| -------------------- | ---------------- | ----------------------------------------------- |
+| `build.yml`          | push/PR          | None                                            |
+| `linting.yml`        | push/PR          | None                                            |
+| `format.yml`         | push/PR          | None                                            |
+| `tests.yml`          | push/PR          | None                                            |
+| `duplication.yml`    | push/PR          | None                                            |
+| `playwright-e2e.yml` | push/PR + manual | `MOLLIE_API_KEY`, `ASD_API_KEY` (payment tests) |
+| `docker.yml`         | push/PR          | None                                            |
+| `devinci.yml`        | manual           | `ASD_API_KEY`                                   |
 
 Workflows that require secrets are gated with `if` conditions — they skip gracefully in forks or when secrets aren't configured.
 
