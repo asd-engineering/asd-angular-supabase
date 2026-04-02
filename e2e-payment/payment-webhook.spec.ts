@@ -1,10 +1,10 @@
 import { test, expect } from '@playwright/test'
 import { createClient } from '@supabase/supabase-js'
 
-const SUPABASE_URL = process.env['SUPABASE_URL'] || 'http://127.0.0.1:54321'
-const SUPABASE_ANON_KEY = process.env['SUPABASE_ANON_KEY'] || ''
-const SUPABASE_SERVICE_ROLE_KEY = process.env['SUPABASE_SERVICE_ROLE_KEY'] || ''
-const API_TUNNEL_URL = process.env['API_TUNNEL_URL'] || ''
+const SUPABASE_URL = process.env['SUPABASE_URL']!
+const SUPABASE_ANON_KEY = process.env['SUPABASE_ANON_KEY']!
+const SUPABASE_SERVICE_ROLE_KEY = process.env['SUPABASE_SERVICE_ROLE_KEY']!
+const API_TUNNEL_URL = process.env['API_TUNNEL_URL']!
 const GITHUB_SHA = process.env['GITHUB_SHA'] || 'local'
 
 const TEST_EMAIL = 'payment-test@example.com'
@@ -17,9 +17,6 @@ function webhookUrl(): string {
 
 test.describe('Payment webhook via ASD tunnel', () => {
   test.describe.configure({ mode: 'serial' })
-  test.skip(!API_TUNNEL_URL, 'API_TUNNEL_URL not set — skipping tunnel tests')
-  test.skip(!SUPABASE_ANON_KEY, 'SUPABASE_ANON_KEY not set')
-  test.skip(!SUPABASE_SERVICE_ROLE_KEY, 'SUPABASE_SERVICE_ROLE_KEY not set')
 
   let accessToken: string
   let userId: string
@@ -157,21 +154,17 @@ test.describe('Payment webhook via ASD tunnel', () => {
       .locator('button, input, [data-status="paid"], a')
       .filter({ hasText: /paid/i })
       .first()
-    if (await paidButton.isVisible({ timeout: 10_000 }).catch(() => false)) {
-      await paidButton.click()
+    await expect(paidButton).toBeVisible({ timeout: 10_000 })
+    await paidButton.click()
 
-      await page.waitForTimeout(3_000)
+    await page.waitForTimeout(3_000)
 
-      const continueButton = page
-        .locator('button, input, a')
-        .filter({ hasText: /continue|confirm|submit/i })
-        .first()
-      if (await continueButton.isVisible({ timeout: 5_000 }).catch(() => false)) {
-        await continueButton.click()
-      }
-    } else {
-      console.log('Mollie test checkout UI not as expected — skipping UI interaction')
-      test.skip()
+    const continueButton = page
+      .locator('button, input, a')
+      .filter({ hasText: /continue|confirm|submit/i })
+      .first()
+    if (await continueButton.isVisible({ timeout: 5_000 }).catch(() => false)) {
+      await continueButton.click()
     }
 
     // Poll DB for status change (Mollie webhook should update via tunnel)

@@ -152,7 +152,7 @@ jobs:
           SUPABASE_ANON_KEY: ${{ steps.supabase.outputs.anon_key }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ steps.supabase.outputs.service_role_key }}
           API_TUNNEL_URL: ${{ steps.tunnel.outputs.api_tunnel_url }}
-        run: pnpm exec playwright test e2e/payment-webhook.spec.ts --project=chromium
+        run: pnpm exec playwright test e2e-payment/payment-webhook.spec.ts --project=chromium
 
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
