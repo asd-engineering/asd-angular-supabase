@@ -138,6 +138,17 @@ automation:
       run: pnpm duplication:check
 
   test-e2e:
+    - name: Bootstrap Supabase
+      run: asd supabase bootstrap
+      skipWhen:
+        port: 54322
+    - name: Start Caddy
+      run: asd caddy start
+    - httpWaitFor:
+        url: 'http://127.0.0.1:${{ env.ASD_CADDY_ADMIN_PORT }}/config/'
+        expectStatus: 200
+    - name: Apply network configuration
+      run: asd net apply --seed --caddy --tunnel
     - name: Playwright E2E tests
       run: pnpm exec playwright test
 
