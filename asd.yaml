@@ -90,16 +90,6 @@ automation:
         expectStatus: 200
     - name: Apply network configuration
       run: asd net apply --seed --caddy --tunnel
-    - name: Start ttyd
-      command: ASD_NO_PROMPT=1 asd ttyd start
-      background: true
-      skipWhen:
-        port: ${{ env.ASD_TTYD_PORT }}
-    - name: Start code-server
-      command: asd code start
-      background: true
-      skipWhen:
-        port: ${{ env.ASD_CODESERVER_PORT }}
     - name: Start dev server
       command: pnpm dev
       background: true
@@ -108,8 +98,8 @@ automation:
     - httpWaitFor:
         url: 'http://127.0.0.1:4200'
         expectStatus: 200
-    - name: Display services
-      run: asd services
+    - name: Expose services
+      run: asd expose list
 
   start:
     - name: Bootstrap Supabase
