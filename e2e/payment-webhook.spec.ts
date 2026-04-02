@@ -1,11 +1,18 @@
 import { test, expect } from '@playwright/test'
 import { createClient } from '@supabase/supabase-js'
 
-const SUPABASE_URL = process.env['SUPABASE_URL']!
-const SUPABASE_ANON_KEY = process.env['SUPABASE_ANON_KEY']!
-const SUPABASE_SERVICE_ROLE_KEY = process.env['SUPABASE_SERVICE_ROLE_KEY']!
-const API_TUNNEL_URL = process.env['API_TUNNEL_URL']!
+const SUPABASE_URL = process.env['SUPABASE_URL'] ?? ''
+const SUPABASE_ANON_KEY = process.env['SUPABASE_ANON_KEY'] ?? ''
+const SUPABASE_SERVICE_ROLE_KEY = process.env['SUPABASE_SERVICE_ROLE_KEY'] ?? ''
+const API_TUNNEL_URL = process.env['API_TUNNEL_URL'] ?? ''
 const GITHUB_SHA = process.env['GITHUB_SHA'] || 'local'
+
+const HAS_TUNNEL_ENV = !!(
+  SUPABASE_URL &&
+  SUPABASE_ANON_KEY &&
+  SUPABASE_SERVICE_ROLE_KEY &&
+  API_TUNNEL_URL
+)
 
 const TEST_EMAIL = 'payment-test@example.com'
 const TEST_PASSWORD = 'test-password-12345'
@@ -16,6 +23,10 @@ function webhookUrl(): string {
 }
 
 test.describe('Payment webhook via ASD tunnel', () => {
+  test.skip(
+    !HAS_TUNNEL_ENV,
+    'Requires SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, and API_TUNNEL_URL',
+  )
   test.describe.configure({ mode: 'serial' })
 
   let accessToken: string
@@ -44,6 +55,7 @@ test.describe('Payment webhook via ASD tunnel', () => {
   })
 
   test.afterAll(async () => {
+    if (!userId) return
     const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false },
     })
