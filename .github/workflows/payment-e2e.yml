@@ -110,14 +110,15 @@ jobs:
 
           echo "Provisioned: client_id=$ASD_CLIENT_ID, host=$ASD_TUNNEL_HOST:$ASD_TUNNEL_PORT"
 
-      - name: Write tunnel credentials to .env
+      - name: Initialize ASD and write tunnel credentials
         run: |
-          cat >> .env <<EOF
+          asd init --yes
+          cat >> .env <<'ENVEOF'
           ASD_CLIENT_ID=${{ env.ASD_CLIENT_ID }}
           ASD_CLIENT_SECRET=${{ env.ASD_CLIENT_SECRET }}
           ASD_TUNNEL_HOST=${{ env.ASD_TUNNEL_HOST }}
           ASD_TUNNEL_PORT=${{ env.ASD_TUNNEL_PORT }}
-          EOF
+          ENVEOF
 
       - name: Start Caddy and apply network config
         run: |
