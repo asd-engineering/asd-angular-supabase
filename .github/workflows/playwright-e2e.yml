@@ -75,9 +75,8 @@ jobs:
 
       - name: Initialize ASD and apply network config
         if: steps.secrets.outputs.available == 'true'
-        env:
-          ASD_API_KEY: ${{ secrets.ASD_API_KEY }}
         run: |
+          asd login key ${{ secrets.ASD_API_KEY }}
           asd init --yes
           asd caddy start
           asd net apply --seed --caddy --tunnel
