@@ -109,7 +109,7 @@ automation:
         url: 'http://127.0.0.1:4200'
         expectStatus: 200
     - name: Display services
-      run: asd service list
+      run: asd services
 
   start:
     - name: Bootstrap Supabase
