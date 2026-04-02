@@ -19,7 +19,8 @@ const TEST_PASSWORD = 'test-password-12345'
 
 /** Webhook URL unique per CI run (SHA prevents conflicts across parallel runs) */
 function webhookUrl(): string {
-  return `${API_TUNNEL_URL}functions/v1/mollie-webhook?ref=${GITHUB_SHA}`
+  const base = API_TUNNEL_URL.replace(/\/+$/, '')
+  return `${base}/functions/v1/mollie-webhook?ref=${GITHUB_SHA}`
 }
 
 test.describe('Payment webhook via ASD tunnel', () => {

@@ -128,13 +128,16 @@ jobs:
         run: |
           asd caddy start
           asd net apply --seed --caddy --tunnel
+          asd supabase extract
 
       - name: Wait for tunnel to be reachable
         if: steps.secrets.outputs.available == 'true'
-        id: tunnel
         run: |
-          API_TUNNEL_URL="https://api-${{ env.ASD_CLIENT_ID }}.${{ env.ASD_TUNNEL_HOST }}/"
-          echo "api_tunnel_url=$API_TUNNEL_URL" >> "$GITHUB_OUTPUT"
+          API_TUNNEL_URL=$(grep '^API_TUNNEL_URL=' .env | cut -d= -f2- | tr -d '"')
+          if [ -z "$API_TUNNEL_URL" ]; then
+            echo "API_TUNNEL_URL not resolved in .env — macro may have failed"
+            exit 1
+          fi
           echo "Polling $API_TUNNEL_URL ..."
           for i in $(seq 1 30); do
             STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$API_TUNNEL_URL" || echo "000")
@@ -150,11 +153,6 @@ jobs:
 
       - name: Run payment E2E tests
         if: steps.secrets.outputs.available == 'true'
-        env:
-          SUPABASE_URL: ${{ steps.supabase.outputs.api_url }}
-          SUPABASE_ANON_KEY: ${{ steps.supabase.outputs.anon_key }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ steps.supabase.outputs.service_role_key }}
-          API_TUNNEL_URL: ${{ steps.tunnel.outputs.api_tunnel_url }}
         run: pnpm exec playwright test e2e/payment-webhook.spec.ts --project=${{ matrix.project }}
 
       # ── Reports & cleanup ──────────────────────────────────────

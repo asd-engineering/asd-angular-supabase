@@ -219,6 +219,8 @@ network:
       tunnelPort: 4200
       subdomain: ${{ env.ENV_PREFIX }}app
       tunnelProtocol: http
+      env:
+        API_TUNNEL_URL: '${{ macro.exposedOrigin() }}'
       process:
         cmd: pnpm dev
         cwd: .
