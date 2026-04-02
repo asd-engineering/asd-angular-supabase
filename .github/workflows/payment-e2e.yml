@@ -70,17 +70,7 @@ jobs:
 
       - name: Install ASD CLI
         run: |
-          RELEASE_URL="https://api.github.com/repos/asd-engineering/asd-cli/releases/latest"
-          DOWNLOAD_URL=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "$RELEASE_URL" \
-            | jq -r '.assets[] | select(.name | test("linux-x64\\.tar\\.gz$")) | .browser_download_url')
-          if [ -z "$DOWNLOAD_URL" ] || [ "$DOWNLOAD_URL" = "null" ]; then
-            echo "Failed to find ASD CLI download URL"
-            exit 1
-          fi
-          curl -sL -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "$DOWNLOAD_URL" -o asd.tar.gz
-          tar -xzf asd.tar.gz
-          sudo mv asd /usr/local/bin/asd
-          sudo chmod +x /usr/local/bin/asd
+          curl -fsSL https://asd.host/install.sh | bash
           asd --version
 
       - name: Provision tunnel credentials
