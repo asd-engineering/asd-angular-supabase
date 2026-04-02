@@ -184,30 +184,23 @@ test.describe('Payment webhook via ASD tunnel', () => {
     await cardMethod.click()
     await page.waitForLoadState('networkidle')
 
-    // Step 2: Mollie shows a card entry form — fill with test card data
-    const cardNumberInput = page
-      .locator('input')
-      .filter({ hasText: /1234/ })
-      .or(page.locator('[placeholder*="1234"]'))
-      .first()
-    const hasCardForm = await cardNumberInput.isVisible({ timeout: 5_000 }).catch(() => false)
+    // Step 2: Card form is inside an iframe (PCI compliance)
+    const cardFrame = page.frameLocator('iframe').nth(1)
+    const cardNumberInput = cardFrame.locator('[placeholder*="1234"]').first()
+    const hasCardForm = await cardNumberInput.isVisible({ timeout: 10_000 }).catch(() => false)
 
     if (hasCardForm) {
-      await cardNumberInput.fill('3782 822463 10005')
-      const expiryInput = page.locator('[placeholder*="MM"]').first()
-      await expiryInput.fill('12/30')
-      const cvcInput = page.locator('[placeholder="CVC"], [placeholder="123"]').first()
-      await cvcInput.fill('123')
-      const cardHolder = page.locator('[placeholder*="name"], [placeholder*="card holder"]').first()
+      await cardNumberInput.fill('4543 4740 0224 9996')
+      await cardFrame.locator('[placeholder="MM / YY"]').fill('12/30')
+      await cardFrame.locator('[placeholder="CVC"]').fill('123')
+      const cardHolder = cardFrame.locator('[placeholder*="name"]').first()
       if (await cardHolder.isVisible().catch(() => false)) {
         await cardHolder.fill('Test User')
       }
-      const payButton = page
+      await cardFrame
         .locator('button')
         .filter({ hasText: /pay with card/i })
-        .first()
-      await expect(payButton).toBeVisible({ timeout: 5_000 })
-      await payButton.click()
+        .click()
       await page.waitForLoadState('networkidle')
     }
 

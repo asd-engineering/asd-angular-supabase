@@ -151,6 +151,29 @@ jobs:
           echo "Tunnel not reachable after 30 attempts"
           exit 1
 
+      - name: Debug Caddy routing
+        if: steps.secrets.outputs.available == 'true'
+        run: |
+          CADDY_ADMIN=$(grep '^ASD_CADDY_ADMIN_PORT=' .env | cut -d= -f2-)
+          echo "=== Caddy admin port: $CADDY_ADMIN ==="
+
+          echo "=== Direct to Supabase (bypass Caddy) ==="
+          curl -s -o /dev/null -w "HTTP %{http_code}\n" -X POST http://127.0.0.1:54321/functions/v1/mollie-webhook
+
+          echo "=== Through Caddy with tunnel Host header ==="
+          TUNNEL_HOST=$(echo "$API_TUNNEL_URL" | sed 's|https\?://||')
+          CADDY_HTTP=$(grep '^ASD_CADDY_PORT_HTTP=' .env | cut -d= -f2-)
+          curl -s -o /dev/null -w "HTTP %{http_code}\n" -X POST -H "Host: ${TUNNEL_HOST}" "http://127.0.0.1:${CADDY_HTTP}/functions/v1/mollie-webhook"
+
+          echo "=== Through tunnel URL ==="
+          curl -s -o /dev/null -w "HTTP %{http_code}\n" -X POST "${API_TUNNEL_URL}/functions/v1/mollie-webhook"
+
+          echo "=== Caddy routes matching functions ==="
+          curl -s "http://127.0.0.1:${CADDY_ADMIN}/config/apps/http/servers" | jq -c '[.. | objects | select(.path? // [] | any(contains("functions")))] | length' 2>/dev/null || echo "jq parse failed"
+
+          echo "=== Caddy route count ==="
+          curl -s "http://127.0.0.1:${CADDY_ADMIN}/config/apps/http/servers" | jq '[.. | objects | select(.match?)] | length' 2>/dev/null || echo "jq parse failed"
+
       - name: Run payment E2E tests
         if: steps.secrets.outputs.available == 'true'
         run: pnpm exec playwright test e2e/payment-webhook.spec.ts --project=${{ matrix.project }}
