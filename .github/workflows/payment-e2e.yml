@@ -45,12 +45,9 @@ jobs:
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Configure Mollie API key for edge functions
-        run: |
-          mkdir -p supabase/functions
-          echo "MOLLIE_API_KEY=${{ secrets.MOLLIE_API_KEY }}" > supabase/functions/.env
-
       - name: Start Supabase
+        env:
+          MOLLIE_API_KEY: ${{ secrets.MOLLIE_API_KEY }}
         run: npx supabase start
 
       - name: Wait for Supabase
