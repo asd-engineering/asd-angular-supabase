@@ -72,7 +72,7 @@ jobs:
         run: |
           RELEASE_URL="https://api.github.com/repos/asd-engineering/asd-cli/releases/latest"
           DOWNLOAD_URL=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "$RELEASE_URL" \
-            | jq -r '.assets[] | select(.name | test("linux.*amd64.*tar.gz$")) | .browser_download_url')
+            | jq -r '.assets[] | select(.name | test("linux-x64\\.tar\\.gz$")) | .browser_download_url')
           if [ -z "$DOWNLOAD_URL" ] || [ "$DOWNLOAD_URL" = "null" ]; then
             echo "Failed to find ASD CLI download URL"
             exit 1
