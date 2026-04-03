@@ -127,10 +127,42 @@ interface ExposedService {
             }
           </div>
           <div
-            class="bg-base-200 rounded-lg border border-base-300 p-3 font-mono text-xs mt-6 max-w-lg mx-auto overflow-x-auto"
+            class="bg-base-200 rounded-lg border border-base-300 p-3 font-mono text-xs mt-6 max-w-lg mx-auto flex items-center justify-between gap-2"
           >
-            <span class="text-muted">Basic auth credentials:</span>
-            <span class="text-success ml-1">grep BASIC_AUTH .env</span>
+            <div>
+              <span class="text-muted">Basic auth credentials:</span>
+              <span class="text-success ml-1">grep BASIC_AUTH .env</span>
+            </div>
+            <button
+              class="btn btn-ghost btn-xs"
+              (click)="copyToClipboard('grep BASIC_AUTH .env')"
+              [title]="copied() ? 'Copied!' : 'Copy command'"
+            >
+              @if (copied()) {
+                <svg
+                  class="w-4 h-4 text-success"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              } @else {
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                  />
+                </svg>
+              }
+            </button>
           </div>
         </div>
       </section>
@@ -417,6 +449,14 @@ interface ExposedService {
 })
 export class Home implements OnInit {
   protected readonly exposedServices = signal<ExposedService[]>([])
+  protected readonly copied = signal(false)
+
+  copyToClipboard(text: string) {
+    navigator.clipboard.writeText(text).then(() => {
+      this.copied.set(true)
+      setTimeout(() => this.copied.set(false), 2000)
+    })
+  }
 
   ngOnInit() {
     fetch('/tunnel-config.json')
@@ -439,7 +479,7 @@ export class Home implements OnInit {
     {
       name: 'Terminal',
       desc: 'Browser terminal via ttyd — run any command from your browser.',
-      cmd: 'asd ttyd start',
+      cmd: 'asd terminal start',
     },
   ])
 
