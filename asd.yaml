@@ -216,12 +216,6 @@ network:
       enabled: true
       auto: true
   services:
-    supabase:studio:
-      public: true
-      tunnelPort: 54323
-      subdomain: ${{ env.ENV_PREFIX }}studio
-      tunnelProtocol: http
-
     angular:dev:
       name: ASD Angular
       dial: 127.0.0.1:4200
