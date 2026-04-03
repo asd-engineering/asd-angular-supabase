@@ -50,6 +50,9 @@ SUBCMD="${PARTS[2]:-}"
 
 [ -z "$MODULE" ] && exit 0
 
+# Skip global flags (--version, --help, etc.)
+[[ "$MODULE" =~ ^- ]] && exit 0
+
 # Skip validation for asd run (project-specific tasks from asd.yaml)
 [ "$MODULE" = "run" ] && exit 0
 
