@@ -18,10 +18,11 @@ ask() {
 }
 
 re_asd_expose='asd expose'
+re_asd_expose_readonly='asd expose (list|status)'
 re_asd_tunnel='asd net apply --tunnel'
 re_asd_tunnel_alt='asd net apply.*--tunnel'
 
-if [[ "$COMMAND" =~ $re_asd_expose ]]; then
+if [[ "$COMMAND" =~ $re_asd_expose ]] && [[ ! "$COMMAND" =~ $re_asd_expose_readonly ]]; then
   ask "asd expose makes local services reachable from the internet: $COMMAND"
 fi
 

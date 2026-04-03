@@ -216,6 +216,10 @@ network:
       enabled: true
       auto: true
   services:
+    supabase:studio:
+      public: true
+    supabase:mailpit:
+      public: true
     angular:dev:
       name: ASD Angular
       dial: 127.0.0.1:4200
