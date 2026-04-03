@@ -61,6 +61,7 @@ jobs:
       - name: Login to ASD platform
         if: env.ASD_API_KEY != ''
         run: |
+          unset SUPABASE_URL SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY
           asd login key "$ASD_API_KEY"
           echo "ASD login complete"
 
