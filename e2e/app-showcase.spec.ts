@@ -3,10 +3,11 @@ import { test, expect } from '@playwright/test'
 test.describe('App showcase — public pages', () => {
   test('home page loads with hero and CTAs', async ({ page }) => {
     await page.goto('/')
-    await expect(page.locator('h1')).toContainText('ASD Angular Boilerplate')
-    await expect(page.locator('text=Production-grade Angular')).toBeVisible()
-    await expect(page.locator('a[href="/auth/login"]:has-text("Get Started")')).toBeVisible()
-    await expect(page.locator('a[href="/dashboard"]:has-text("Dashboard")')).toBeVisible()
+    await expect(page.locator('h1')).toContainText('Ship SaaS Apps with ASD Platform')
+    await expect(
+      page.locator('a[href="/auth/signup"]:has-text("Get Started")').first(),
+    ).toBeVisible()
+    await expect(page.locator('a:has-text("View on GitHub")').first()).toBeVisible()
   })
 
   test('pricing page shows three plan cards', async ({ page }) => {
@@ -18,7 +19,7 @@ test.describe('App showcase — public pages', () => {
     await expect(page.locator('text=Starter')).toBeVisible()
     await expect(page.locator('text=€9/month')).toBeVisible()
 
-    await expect(page.getByRole('heading', { name: 'Pro' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Pro', exact: true })).toBeVisible()
     await expect(page.locator('text=€29/month')).toBeVisible()
 
     await expect(page.locator('text=Enterprise')).toBeVisible()
