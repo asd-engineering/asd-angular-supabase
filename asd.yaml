@@ -90,6 +90,8 @@ automation:
         expectStatus: 200
     - name: Apply network configuration
       run: asd net apply --seed --caddy --tunnel
+    - name: Generate tunnel config for frontend
+      command: asd expose list --json > public/tunnel-config.json
     - name: Start dev server
       command: pnpm dev
       background: true

@@ -1,5 +1,15 @@
-import { Component, signal } from '@angular/core'
+import { Component, signal, OnInit } from '@angular/core'
 import { RouterLink } from '@angular/router'
+
+interface ExposedService {
+  project: string
+  id: string
+  name: string
+  url: string
+  port?: number
+  pid?: number
+  alive?: boolean
+}
 
 @Component({
   selector: 'app-home',
@@ -71,6 +81,46 @@ import { RouterLink } from '@angular/router'
       </div>
     </section>
 
+    <!-- Live Services (shown when tunnels are active) -->
+    @if (exposedServices().length > 0) {
+      <section class="py-16 px-4 bg-success/5 border-y border-success/20">
+        <div class="max-w-6xl mx-auto">
+          <div class="flex items-center justify-center gap-2 mb-4">
+            <span class="w-2.5 h-2.5 rounded-full bg-success animate-pulse"></span>
+            <p class="terminal-header !mb-0">
+              <span class="terminal-text text-success" style="--char-count: 18"
+                >Services Are Live</span
+              >
+            </p>
+          </div>
+          <h2 class="text-3xl md:text-4xl font-bold font-heading text-center mb-4">
+            Your Dev Environment
+          </h2>
+          <p class="text-muted text-center max-w-2xl mx-auto mb-10">
+            Tunnels are connected. Click to open your services in a new tab.
+          </p>
+          <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            @for (svc of exposedServices(); track svc.id) {
+              <a
+                [href]="svc.url"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="feature-card group hover:border-success/40 transition-colors cursor-pointer no-underline"
+              >
+                <h3
+                  class="font-heading font-semibold text-lg mb-1 group-hover:text-success transition-colors"
+                >
+                  {{ svc.name }}
+                </h3>
+                <p class="text-muted text-sm mb-3">{{ svc.id }}</p>
+                <span class="text-success text-sm font-semibold">Open &rarr;</span>
+              </a>
+            }
+          </div>
+        </div>
+      </section>
+    }
+
     <!-- Section 2: How It Works -->
     <section id="features" class="py-20 px-4 bg-developer-tint">
       <div class="max-w-6xl mx-auto">
@@ -78,12 +128,13 @@ import { RouterLink } from '@angular/router'
           <span class="terminal-text" style="--char-count: 20">Quick Start</span>
         </p>
         <h2 class="text-3xl md:text-4xl font-bold font-heading text-center mb-4">
-          Three Steps to Full Stack
+          Two Steps to Full Stack
         </h2>
         <p class="text-muted text-center max-w-2xl mx-auto mb-12">
-          From zero to a running SaaS app with database, auth, payments, and cloud IDE.
+          Everything is preconfigured in <code class="text-primary">asd.yaml</code>. Install the CLI
+          and go.
         </p>
-        <div class="grid md:grid-cols-3 gap-6">
+        <div class="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
           @for (step of setupSteps(); track step.num) {
             <div class="feature-card">
               <div
@@ -194,10 +245,11 @@ import { RouterLink } from '@angular/router'
           class="bg-base-200 rounded-lg border border-base-300 p-4 font-mono text-sm mb-8 max-w-3xl mx-auto overflow-x-auto"
         >
           <p>
-            <span class="text-success">$</span> gh workflow run devinci.yml -f username="dev" -f
-            password="secret"
+            <span class="text-success">$</span> gh workflow run devinci.yml --ref $(git branch
+            --show-current)
           </p>
-          <p class="text-muted mt-1">Triggering cloud IDE on ubuntu-latest...</p>
+          <p>&nbsp;&nbsp;&nbsp;&nbsp;-f username="dev" -f password="secret"</p>
+          <p class="text-muted mt-1">Triggering cloud IDE on feature/my-branch...</p>
         </div>
         <div class="grid md:grid-cols-3 gap-6">
           @for (feat of devinciFeatures(); track feat.title) {
@@ -284,7 +336,18 @@ import { RouterLink } from '@angular/router'
     </section>
   `,
 })
-export class Home {
+export class Home implements OnInit {
+  protected readonly exposedServices = signal<ExposedService[]>([])
+
+  ngOnInit() {
+    fetch('/tunnel-config.json')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) this.exposedServices.set(data)
+      })
+      .catch(() => {})
+  }
+
   protected readonly setupSteps = signal([
     {
       num: 1,
@@ -294,15 +357,9 @@ export class Home {
     },
     {
       num: 2,
-      title: 'Configure asd.yaml',
-      desc: 'Define plugins, services, automation sequences, and hub views in a single file.',
-      code: `plugins:\n  - supabase\nautomation:\n  dev:\n    - run: asd supabase bootstrap\n    - run: asd caddy start\n    - command: pnpm dev`,
-    },
-    {
-      num: 3,
       title: 'Run asd run dev',
-      desc: 'One command starts Supabase, Caddy, Angular, code-server, and terminal.',
-      code: '$ asd run dev\n# Supabase, Caddy, Angular, code-server, ttyd — all running.',
+      desc: 'One command starts Supabase, Caddy, Angular, code-server, ttyd, and tunnels.',
+      code: '$ asd run dev\n# Everything configured in asd.yaml — just run it.',
     },
   ])
 

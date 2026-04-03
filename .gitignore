@@ -64,3 +64,6 @@ Thumbs.db
 
 # ASD runtime state (added by .asd)
 .asd/workspace/
+
+# Generated tunnel config (created by asd run dev)
+public/tunnel-config.json

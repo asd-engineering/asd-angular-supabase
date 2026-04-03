@@ -42,11 +42,14 @@ The ASD CLI has built-in commands that expose its own documentation to AI agents
 | `asd schema --ai`      | Extended reference including external tool docs and npm links                               |
 | `asd flow`             | Visualize the template-to-`.env` data pipeline: how `tpl.env` → macro expansion → `.env`    |
 
-**When to use:**
+**MANDATORY — run these BEFORE making changes:**
 
-- **`asd schema`** — before editing `asd.yaml` or `net.manifest.yaml`, to see all available fields and their types
-- **`asd flow`** — to understand how env vars are resolved: module `tpl.env` → package `tpl.env` → defaults file → existing `.env` (merge order)
-- **`asd rules`** — before making architectural decisions about routing, auth, or service naming
+- **`asd rules`** — MUST read before ANY architectural decision (routing, auth, service config, networking). This is non-negotiable. Rules define what is allowed and what is forbidden.
+- **`asd schema`** — MUST read before editing `asd.yaml` or `net.manifest.yaml`. Shows all available fields, types, and macros (like `${{ macro.exposedOrigin() }}`).
+- **`asd flow`** — MUST read before touching env vars or tunnel URLs. Shows how `tpl.env` → macro expansion → `.env` works, so you don't reinvent what ASD already provides.
+- **`asd expose list --json`** — Use to get all exposed service URLs. Never hardcode or manually construct tunnel URLs.
+
+**Anti-pattern:** Writing custom scripts to derive tunnel URLs, construct auth strings, or generate service configs. ASD already provides macros (`exposedOrigin()`, `exposedOriginWithAuth()`) and CLI commands (`asd expose list`) for this. Use them.
 
 ## Tech Stack
 

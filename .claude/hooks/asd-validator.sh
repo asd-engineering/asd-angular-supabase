@@ -61,6 +61,16 @@ if ! grep -q "^${MODULE}" "$COMMANDS_CACHE" 2>/dev/null; then
   deny "Unknown ASD module: '${MODULE}'. Run 'asd help' to see available commands."
 fi
 
+# Skip subcommand validation for standalone commands (no subcommands in cache)
+if ! grep -q "^${MODULE} " "$COMMANDS_CACHE" 2>/dev/null; then
+  exit 0
+fi
+
+# Skip if SUBCMD looks like a shell redirect/pipe
+if [ -n "$SUBCMD" ] && [[ "$SUBCMD" =~ ^[0-9\>\<\|] ]]; then
+  exit 0
+fi
+
 # If subcommand given, check "module subcommand" combo exists
 if [ -n "$SUBCMD" ] && [[ ! "$SUBCMD" =~ ^- ]]; then
   if ! grep -qx "${MODULE} ${SUBCMD}" "$COMMANDS_CACHE" 2>/dev/null; then
