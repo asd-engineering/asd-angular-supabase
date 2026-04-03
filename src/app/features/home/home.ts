@@ -370,26 +370,26 @@ export class Home implements OnInit {
     { name: 'Studio', port: '54323', desc: 'Database management UI', variant: 'info' },
   ])
 
-  protected readonly yamlSnippet = signal(`automation:
-  dev:
-    - name: Bootstrap Supabase
-      run: asd supabase bootstrap
-    - name: Start Caddy
-      run: asd caddy start
-    - name: Apply network config
-      run: asd net apply --seed --caddy --tunnel
-    - name: Start dev server
-      command: pnpm dev
-      background: true
-    - name: Expose services
-      run: asd expose list
-
-hub:
-  views:
-    - name: App
-    - name: Studio
-    - name: Code Studio
-    - name: Terminal`)
+  protected readonly yamlSnippet = signal(`network:
+  services:
+    # public: true = create tunnel (opt-in)
+    # public: false = local only (default)
+    supabase:studio:
+      public: true    # tunnel Studio UI
+    supabase:mailpit:
+      public: true    # tunnel email inbox
+    angular:dev:
+      public: true
+      subdomain: app  # main app tunnel
+      env:
+        # Kong API auto-routes through app:
+        # /auth/v1, /rest/v1, /storage/v1,
+        # /functions/v1, /realtime/v1
+        API_TUNNEL_URL: '\${{ macro.exposedOrigin() }}'
+    codeserver:
+      public: false   # private, Caddy auth
+    ttyd:
+      public: false   # private, Caddy auth`)
 
   protected readonly yamlFeatures = signal([
     {
@@ -401,16 +401,16 @@ hub:
       desc: 'Define named sequences (dev, start, stop, test) that run steps in order with health checks.',
     },
     {
-      title: 'Network Services',
-      desc: 'Caddy reverse proxy routes all services. TLS, auth rules, and tunnel subdomains — auto-configured.',
+      title: 'public: true = Tunnel',
+      desc: 'Services are local-only by default. Set public: true to create an HTTPS tunnel — explicit opt-in for internet exposure.',
+    },
+    {
+      title: 'Kong API on App URL',
+      desc: 'Supabase Kong gateway auto-routes through the main app tunnel: /auth/v1, /rest/v1, /storage/v1, /functions/v1. Auth works through tunnels.',
     },
     {
       title: 'Hub Views',
       desc: 'Unified dashboard with iframe widgets for App, Studio, Code Studio, and Terminal.',
-    },
-    {
-      title: 'Skip Logic',
-      desc: 'Steps skip automatically when ports are already in use — safe to re-run anytime.',
     },
     {
       title: 'Vault Integration',
