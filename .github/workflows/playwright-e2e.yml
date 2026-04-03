@@ -70,13 +70,15 @@ jobs:
       - name: Install ASD CLI
         if: steps.secrets.outputs.available == 'true'
         run: |
-          curl -fsSL https://asd.host/install.sh | VERSION=v2.4.2-beta.2 bash
+          curl -fsSL https://asd.host/install.sh | VERSION=v2.5.0-beta.8 bash
           asd --version
 
       - name: Initialize ASD and apply network config
         if: steps.secrets.outputs.available == 'true'
+        env:
+          ASD_API_KEY: ${{ secrets.ASD_API_KEY }}
         run: |
-          asd login key ${{ secrets.ASD_API_KEY }}
+          asd login key "$ASD_API_KEY"
           asd init --yes
           asd caddy start
           asd net apply --seed --caddy --tunnel
