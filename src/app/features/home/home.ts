@@ -117,6 +117,12 @@ interface ExposedService {
               </a>
             }
           </div>
+          <div
+            class="bg-base-200 rounded-lg border border-base-300 p-3 font-mono text-xs mt-6 max-w-lg mx-auto overflow-x-auto"
+          >
+            <span class="text-muted">Basic auth credentials:</span>
+            <span class="text-success ml-1">grep BASIC_AUTH .env</span>
+          </div>
         </div>
       </section>
     }
