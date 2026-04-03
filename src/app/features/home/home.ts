@@ -116,21 +116,12 @@ interface ExposedService {
                 <span class="text-success text-sm font-semibold">Open &rarr;</span>
               </a>
             }
-            @for (tool of devTools(); track tool.name) {
-              <div class="feature-card border-base-300">
-                <h3 class="font-heading font-semibold text-lg mb-1">{{ tool.name }}</h3>
-                <p class="text-muted text-sm mb-2">{{ tool.desc }}</p>
-                <div class="bg-base-300/50 rounded p-2 font-mono text-xs">
-                  <span class="text-success">$</span> {{ tool.cmd }}
-                </div>
-              </div>
-            }
           </div>
           <div
             class="bg-base-200 rounded-lg border border-base-300 p-3 font-mono text-xs mt-6 max-w-lg mx-auto flex items-center justify-between gap-2"
           >
             <div>
-              <span class="text-muted">Basic auth credentials:</span>
+              <span class="text-muted">Basic auth credentials (run in project root):</span>
               <span class="text-success ml-1">grep BASIC_AUTH .env</span>
             </div>
             <button
