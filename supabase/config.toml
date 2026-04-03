@@ -17,12 +17,12 @@ api_url = "http://127.0.0.1"
 [auth]
 enabled = true
 site_url = "http://localhost:4200"
-additional_redirect_urls = ["http://localhost:4200/auth/callback"]
+additional_redirect_urls = ["http://localhost:4200/auth/callback", "http://localhost:4200/dashboard"]
 
 [auth.email]
 enable_signup = true
 double_confirm_changes = true
-enable_confirmations = false
+enable_confirmations = true
 
 [functions.mollie-webhook]
 verify_jwt = false
