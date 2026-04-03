@@ -43,6 +43,7 @@ __screenshots__/
 /playwright-report
 /test-results
 /e2e-results
+/report
 
 # Environment
 .env
@@ -55,3 +56,14 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# .env hygiene (added by .asd)
+.env
+.env.*
+!.env.example
+
+# ASD runtime state (added by .asd)
+.asd/workspace/
+
+# Generated tunnel config (created by asd run dev)
+public/tunnel-config.json

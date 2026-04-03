@@ -1,0 +1,18 @@
+services:
+  dev:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: dev
+    network_mode: host
+    volumes:
+      - ..:/workspace
+      - /var/run/docker.sock:/var/run/docker.sock
+      - node_modules:/workspace/node_modules
+    environment:
+      - TERM=xterm-256color
+    stdin_open: true
+    tty: true
+
+volumes:
+  node_modules:

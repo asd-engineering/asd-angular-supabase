@@ -1,8 +1,5 @@
 @import 'tailwindcss';
 
-/* Ensure Tailwind CSS 4 scans all source files for utility classes */
-@source "./**/*.{html,ts,js}";
-
 @plugin '@tailwindcss/typography';
 @plugin "daisyui" {
   themes: false;

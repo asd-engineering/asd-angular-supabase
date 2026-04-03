@@ -1,0 +1,10 @@
+services:
+  prod:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: prod
+    ports:
+      - '3000:4000'
+    environment:
+      - NODE_ENV=production

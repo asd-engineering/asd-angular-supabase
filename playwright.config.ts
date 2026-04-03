@@ -1,4 +1,13 @@
 import { defineConfig, devices } from '@playwright/test'
+import { readFileSync, existsSync } from 'node:fs'
+
+// Load .env (ASD writes resolved macros here via `asd net apply`)
+if (existsSync('.env')) {
+  for (const line of readFileSync('.env', 'utf8').split('\n')) {
+    const m = line.match(/^([A-Z_][A-Z0-9_]*)=["']?(.*?)["']?\s*$/)
+    if (m && !process.env[m[1]]) process.env[m[1]] = m[2]
+  }
+}
 
 export default defineConfig({
   testDir: './e2e',

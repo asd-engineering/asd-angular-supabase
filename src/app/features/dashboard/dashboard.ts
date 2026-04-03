@@ -10,7 +10,10 @@ import { AuthService } from '@core/services/auth.service'
     <div class="container mx-auto p-6 max-w-6xl">
       <div class="flex items-center justify-between mb-8">
         <h1 class="text-3xl font-bold font-heading">Dashboard</h1>
-        <a routerLink="/dashboard/settings" class="btn btn-ghost btn-sm">Settings</a>
+        <div class="flex gap-2">
+          <a routerLink="/dashboard/orders" class="btn btn-ghost btn-sm">Orders</a>
+          <a routerLink="/dashboard/settings" class="btn btn-ghost btn-sm">Settings</a>
+        </div>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div class="stat-card">

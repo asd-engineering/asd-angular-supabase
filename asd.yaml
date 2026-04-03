@@ -3,11 +3,11 @@ project:
   name: asd-angular-supabase
   description: Angular + Supabase boilerplate with ASD platform integration
   domain: localhost
+  env_template: 'tpl.env'
   project_root: angular:dev
   plugins:
     - supabase
   hub:
-    iframe_patch: true
     globalSettings:
       theme: light
       widgetStoreUrl: []
@@ -60,36 +60,29 @@ project:
                 rows: 6
                 type: iframe
                 serviceId: ttyd
-    serviceTemplates:
-      default:
-        type: iframe
-        maxInstances: 1
-        config:
-          minColumns: 1
-          maxColumns: 8
-          minRows: 1
-          maxRows: 6
     styling:
       widget:
         minColumns: 1
         maxColumns: 8
         minRows: 1
         maxRows: 6
+
 features:
   auto_detect_services: false
   auto_install_binaries: true
-  justfile_integration: false
   ingress_header: true
   enable_restricted_ports: false
   hub_visibility: public
-  auto_install_modules: true
   auto_start_caddy: true
   auto_start_ttyd: true
   auto_start_codeserver: true
+
 automation:
   dev:
     - name: Bootstrap Supabase
       run: asd supabase bootstrap
+      skipWhen:
+        port: 54322
     - name: Start Caddy
       run: asd caddy start
     - httpWaitFor:
@@ -97,16 +90,25 @@ automation:
         expectStatus: 200
     - name: Apply network configuration
       run: asd net apply --seed --caddy --tunnel
-    - name: Start ttyd
-      command: ASD_NO_PROMPT=1 asd ttyd start
-      background: true
-      skipWhen:
-        port: ${{ env.TTYD_PORT }}
-    - name: Start code-server
-      command: asd code start
-      background: true
-      skipWhen:
-        port: ${{ env.CODE_PORT }}
+    - name: Generate service config for frontend
+      command: >-
+        node -e "
+        const{execSync}=require('child_process');
+        const fs=require('fs');
+        const all=JSON.parse(execSync('asd expose list --json'));
+        const own=all.filter(s=>s.project==='asd-angular-supabase'&&s.alive);
+        fs.writeFileSync('public/tunnel-config.json',JSON.stringify(own,null,2));
+        const envFile=fs.readFileSync('.env','utf8');
+        const m=envFile.match(/ASD_CADDY_PORT_HTTP=(\d+)/);
+        const port=m?m[1]:'80';
+        const local=[
+          {name:'Studio',id:'supabase:studio',url:'http://studio.localhost:'+port,cmd:'asd run supa-start',desc:'Browse tables, manage RLS policies, run SQL queries — Supabase dashboard.'},
+          {name:'Mailpit',id:'supabase:mailpit',url:'http://mailpit.localhost:'+port,cmd:'asd run supa-start',desc:'All auth emails (signup, password reset, magic links) captured locally.'},
+          {name:'Code Studio',id:'codeserver',url:'http://asd.localhost:'+port+'/codeserver/',cmd:'asd code start',desc:'VS Code in your browser — full editor with extensions and terminal.'},
+          {name:'Terminal',id:'ttyd',url:'http://asd.localhost:'+port+'/ttyd/',cmd:'asd terminal start',desc:'Browser terminal via ttyd — run any command from your browser.'}
+        ];
+        fs.writeFileSync('public/local-services.json',JSON.stringify(local,null,2));
+        "
     - name: Start dev server
       command: pnpm dev
       background: true
@@ -115,11 +117,14 @@ automation:
     - httpWaitFor:
         url: 'http://127.0.0.1:4200'
         expectStatus: 200
-    - name: Display hub URL
-      run: asd hub url
+    - name: Expose services
+      run: asd expose list
+
   start:
     - name: Bootstrap Supabase
       run: asd supabase bootstrap
+      skipWhen:
+        port: 54322
     - name: Start Caddy
       run: asd caddy start
     - httpWaitFor:
@@ -131,7 +136,93 @@ automation:
     - name: Stop Caddy
       run: asd caddy stop
     - name: Stop Supabase
-      run: npx supabase stop
+      run: asd supabase stop
+
+  down:
+    - name: Stop Caddy
+      run: asd caddy stop
+    - name: Stop Supabase
+      run: npx supabase stop --no-backup
+
+  check-all:
+    - name: Lint
+      run: pnpm lint
+    - name: Typecheck
+      run: pnpm typecheck
+    - name: Format check
+      run: pnpm format:check
+    - name: Unit tests
+      run: pnpm test:run
+    - name: Duplication check
+      run: pnpm duplication:check
+
+  test-e2e:
+    - name: Bootstrap Supabase
+      run: asd supabase bootstrap
+      skipWhen:
+        port: 54322
+    - name: Start Caddy
+      run: asd caddy start
+    - httpWaitFor:
+        url: 'http://127.0.0.1:${{ env.ASD_CADDY_ADMIN_PORT }}/config/'
+        expectStatus: 200
+    - name: Apply network configuration
+      run: asd net apply --seed --caddy --tunnel
+    - name: Playwright E2E tests
+      run: pnpm exec playwright test
+
+  # Quality
+  lint:
+    - run: pnpm lint
+  typecheck:
+    - run: pnpm typecheck
+  format:
+    - run: pnpm format
+  format-check:
+    - run: pnpm format:check
+  check:
+    - run: pnpm lint
+    - run: pnpm typecheck
+    - run: pnpm format:check
+
+  # Testing
+  test:
+    - run: pnpm test
+  test-run:
+    - run: pnpm test:run
+  test-coverage:
+    - run: pnpm test:coverage
+  test-e2e-headed:
+    - run: pnpm exec playwright test --headed
+  test-e2e-ui:
+    - run: pnpm exec playwright test --ui
+  test-e2e-chromium:
+    - run: pnpm exec playwright test --project=chromium
+  test-e2e-firefox:
+    - run: pnpm exec playwright test --project=firefox
+  test-e2e-webkit:
+    - run: pnpm exec playwright test --project=webkit
+  test-e2e-report:
+    - run: pnpm exec playwright show-report
+
+  # Duplication
+  duplication:
+    - run: pnpm duplication
+  duplication-check:
+    - run: pnpm duplication:check
+
+  # Supabase
+  supa-start:
+    - run: asd supabase start
+  supa-stop:
+    - run: asd supabase stop
+  supa-status:
+    - run: npx supabase status
+  supa-reset:
+    - run: npx supabase db reset
+  supa-types-local:
+    - run: npx supabase gen types typescript --local > src/app/core/types/database.types.ts
+
 tunnels:
   mode: 'caddy'
 
@@ -144,10 +235,11 @@ network:
   services:
     supabase:studio:
       public: true
-      tunnelPort: 54323
-      subdomain: studio
-      tunnelProtocol: http
-      iframe_patch: true
+      basic_auth:
+        enabled: true
+        routes: ['tunnel']
+    supabase:mailpit:
+      public: true
     angular:dev:
       name: ASD Angular
       dial: 127.0.0.1:4200
@@ -156,17 +248,16 @@ network:
       stripPrefix: false
       public: true
       tunnelPort: 4200
-      subdomain: app
+      subdomain: ${{ env.ENV_PREFIX }}app
       tunnelProtocol: http
-      iframe_patch: true
+      env:
+        API_TUNNEL_URL: '${{ macro.exposedOrigin() }}'
       process:
         cmd: pnpm dev
         cwd: .
-      priority: 100
+      priority: 50
       description: Angular development server - main frontend
     codeserver:
       public: false
-      iframe_patch: true
     ttyd:
       public: false
-      iframe_patch: true

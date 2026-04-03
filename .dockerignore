@@ -1,0 +1,12 @@
+node_modules
+dist
+.angular
+.asd
+.git
+.husky
+.vscode
+*.log
+.env
+.env.*
+!.env.example
+docker
