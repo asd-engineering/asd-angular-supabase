@@ -146,11 +146,10 @@ test.describe('Payment webhook via ASD tunnel', () => {
       form: { id: order!.mollie_payment_id },
     })
 
-    // 200 = processed, 500 = Mollie API may reject in test mode,
-    // 404 = Caddy duplicate-route bug may mis-route to Angular instead of Supabase Kong.
-    // The important thing is the tunnel delivered the request (any HTTP response proves delivery).
+    // 200 = processed, 500 = Mollie API may reject in test mode —
+    // the important thing is the tunnel delivered the request.
     console.log(`Webhook POST through tunnel returned: ${webhookResponse.status()}`)
-    expect([200, 404, 500]).toContain(webhookResponse.status())
+    expect([200, 500]).toContain(webhookResponse.status())
   })
 
   test('full Mollie checkout flow', async ({ page, request }) => {
@@ -176,39 +175,28 @@ test.describe('Payment webhook via ASD tunnel', () => {
 
     // Navigate to Mollie test checkout page
     await page.goto(checkoutUrl)
-    await page.waitForLoadState('networkidle')
 
     // Step 1: Select a payment method (Mollie shows Card, iDEAL, etc.)
     const cardMethod = page.locator('text=Card').first()
-    await expect(cardMethod).toBeVisible({ timeout: 15_000 })
+    await expect(cardMethod).toBeVisible({ timeout: 10_000 })
     await cardMethod.click()
-    await page.waitForLoadState('networkidle')
 
-    // Step 2: Card form is inside an iframe (PCI compliance)
-    const cardFrame = page.frameLocator('iframe').nth(1)
-    const cardNumberInput = cardFrame.locator('[placeholder*="1234"]').first()
-    const hasCardForm = await cardNumberInput.isVisible({ timeout: 10_000 }).catch(() => false)
+    // Step 2: Mollie test mode shows a status selection page — select "Paid"
+    const paidButton = page
+      .locator('button, input, [data-status="paid"], a')
+      .filter({ hasText: /paid/i })
+      .first()
+    await expect(paidButton).toBeVisible({ timeout: 10_000 })
+    await paidButton.click()
 
-    if (hasCardForm) {
-      await cardNumberInput.fill('4543 4740 0224 9996')
-      await cardFrame.locator('[placeholder="MM / YY"]').fill('12/30')
-      await cardFrame.locator('[placeholder="CVC"]').fill('123')
-      const cardHolder = cardFrame.locator('[placeholder*="name"]').first()
-      if (await cardHolder.isVisible().catch(() => false)) {
-        await cardHolder.fill('Test User')
-      }
-      await cardFrame
-        .locator('button')
-        .filter({ hasText: /pay with card/i })
-        .click()
-      await page.waitForLoadState('networkidle')
+    // Step 3: Confirm if needed
+    const continueButton = page
+      .locator('button, input, a')
+      .filter({ hasText: /continue|confirm|submit/i })
+      .first()
+    if (await continueButton.isVisible({ timeout: 5_000 }).catch(() => false)) {
+      await continueButton.click()
     }
-
-    // Step 3: Mollie test mode shows status selection with radio buttons
-    const paidRadio = page.getByRole('radio', { name: 'Paid' })
-    await expect(paidRadio).toBeVisible({ timeout: 15_000 })
-    await paidRadio.check()
-    await page.getByRole('button', { name: /continue/i }).click()
 
     // Poll DB for status change (Mollie webhook should update via tunnel)
     const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
