@@ -90,8 +90,25 @@ automation:
         expectStatus: 200
     - name: Apply network configuration
       run: asd net apply --seed --caddy --tunnel
-    - name: Generate tunnel config for frontend
-      command: node -e "const{execSync}=require('child_process');const all=JSON.parse(execSync('asd expose list --json'));const own=all.filter(s=>s.project==='asd-angular-supabase'&&s.alive);require('fs').writeFileSync('public/tunnel-config.json',JSON.stringify(own,null,2))"
+    - name: Generate service config for frontend
+      command: >-
+        node -e "
+        const{execSync}=require('child_process');
+        const fs=require('fs');
+        const all=JSON.parse(execSync('asd expose list --json'));
+        const own=all.filter(s=>s.project==='asd-angular-supabase'&&s.alive);
+        fs.writeFileSync('public/tunnel-config.json',JSON.stringify(own,null,2));
+        const envFile=fs.readFileSync('.env','utf8');
+        const m=envFile.match(/ASD_CADDY_PORT_HTTP=(\d+)/);
+        const port=m?m[1]:'80';
+        const local=[
+          {name:'Studio',id:'supabase:studio',url:'http://studio.localhost:'+port,cmd:'asd run supa-start',desc:'Browse tables, manage RLS policies, run SQL queries — Supabase dashboard.'},
+          {name:'Mailpit',id:'supabase:mailpit',url:'http://mailpit.localhost:'+port,cmd:'asd run supa-start',desc:'All auth emails (signup, password reset, magic links) captured locally.'},
+          {name:'Code Studio',id:'codeserver',url:'http://asd.localhost:'+port+'/codeserver/',cmd:'asd code start',desc:'VS Code in your browser — full editor with extensions and terminal.'},
+          {name:'Terminal',id:'ttyd',url:'http://asd.localhost:'+port+'/ttyd/',cmd:'asd terminal start',desc:'Browser terminal via ttyd — run any command from your browser.'}
+        ];
+        fs.writeFileSync('public/local-services.json',JSON.stringify(local,null,2));
+        "
     - name: Start dev server
       command: pnpm dev
       background: true
@@ -218,6 +235,9 @@ network:
   services:
     supabase:studio:
       public: true
+      basic_auth:
+        enabled: true
+        routes: ['tunnel']
     supabase:mailpit:
       public: true
     angular:dev:

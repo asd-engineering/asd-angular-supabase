@@ -81,10 +81,10 @@ interface ExposedService {
       </div>
     </section>
 
-    <!-- Live Services (shown when tunnels are active) -->
-    @if (exposedServices().length > 0) {
-      <section class="py-16 px-4 bg-success/5 border-y border-success/20">
-        <div class="max-w-6xl mx-auto">
+    <!-- Dev Tools + Live Services -->
+    <section class="py-16 px-4">
+      <div class="max-w-6xl mx-auto">
+        @if (exposedServices().length > 0) {
           <div class="flex items-center justify-center gap-2 mb-4">
             <span class="w-2.5 h-2.5 rounded-full bg-success animate-pulse"></span>
             <p class="terminal-header !mb-0">
@@ -93,19 +93,28 @@ interface ExposedService {
               >
             </p>
           </div>
-          <h2 class="text-3xl md:text-4xl font-bold font-heading text-center mb-4">
-            Your Dev Environment
-          </h2>
-          <p class="text-muted text-center max-w-2xl mx-auto mb-10">
-            Tunnels are connected. Click to open your services in a new tab.
+        } @else {
+          <p class="terminal-header mb-4">
+            <span class="terminal-text" style="--char-count: 10">Dev Tools</span>
           </p>
-          <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        }
+        <h2 class="text-3xl md:text-4xl font-bold font-heading text-center mb-4">
+          Everything in Your Browser
+        </h2>
+        <p class="text-muted text-center max-w-2xl mx-auto mb-10">
+          Database UI, email inbox, code editor, and terminal — all accessible locally or via
+          tunnels.
+        </p>
+
+        <!-- Tunnel services (clickable links) -->
+        @if (exposedServices().length > 0) {
+          <div class="flex flex-wrap justify-center gap-4 mb-6">
             @for (svc of exposedServices(); track svc.id) {
               <a
                 [href]="svc.url"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="feature-card group hover:border-success/40 transition-colors cursor-pointer no-underline"
+                class="feature-card group hover:border-success/40 transition-colors cursor-pointer no-underline w-64"
               >
                 <h3
                   class="font-heading font-semibold text-lg mb-1 group-hover:text-success transition-colors"
@@ -118,7 +127,7 @@ interface ExposedService {
             }
           </div>
           <div
-            class="bg-base-200 rounded-lg border border-base-300 p-3 font-mono text-xs mt-6 max-w-lg mx-auto flex items-center justify-between gap-2"
+            class="bg-base-200 rounded-lg border border-base-300 p-3 font-mono text-xs mb-10 max-w-lg mx-auto flex items-center justify-between gap-2"
           >
             <div>
               <span class="text-muted">Basic auth credentials (run in project root):</span>
@@ -126,10 +135,10 @@ interface ExposedService {
             </div>
             <button
               class="btn btn-ghost btn-xs"
-              (click)="copyToClipboard('grep BASIC_AUTH .env')"
-              [title]="copied() ? 'Copied!' : 'Copy command'"
+              (click)="copyToClipboard('grep BASIC_AUTH .env', $event)"
+              [title]="copiedCmd() === 'grep BASIC_AUTH .env' ? 'Copied!' : 'Copy command'"
             >
-              @if (copied()) {
+              @if (copiedCmd() === 'grep BASIC_AUTH .env') {
                 <svg
                   class="w-4 h-4 text-success"
                   fill="none"
@@ -155,9 +164,63 @@ interface ExposedService {
               }
             </button>
           </div>
+        }
+
+        <!-- Dev tool cards (always visible) -->
+        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          @for (tool of devTools(); track tool.name) {
+            <a
+              [href]="tool.url"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="feature-card group hover:border-primary/40 transition-colors cursor-pointer no-underline flex flex-col"
+            >
+              <h3
+                class="font-heading font-semibold text-lg mb-1 group-hover:text-primary transition-colors"
+              >
+                {{ tool.name }}
+              </h3>
+              <p class="text-muted text-sm mb-3 flex-1">{{ tool.desc }}</p>
+              <div
+                class="bg-base-300/50 rounded p-2 font-mono text-xs flex items-center justify-between gap-2"
+              >
+                <span><span class="text-success">$</span> {{ tool.cmd }}</span>
+                <button
+                  class="btn btn-ghost btn-xs min-h-0 h-auto p-0.5"
+                  (click)="copyToClipboard(tool.cmd, $event)"
+                  [title]="copiedCmd() === tool.cmd ? 'Copied!' : 'Copy command'"
+                >
+                  @if (copiedCmd() === tool.cmd) {
+                    <svg
+                      class="w-3.5 h-3.5 text-success"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  } @else {
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                      />
+                    </svg>
+                  }
+                </button>
+              </div>
+            </a>
+          }
         </div>
-      </section>
-    }
+      </div>
+    </section>
 
     <!-- Section 2: How It Works -->
     <section id="features" class="py-20 px-4 bg-developer-tint">
@@ -174,16 +237,48 @@ interface ExposedService {
         </p>
         <div class="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
           @for (step of setupSteps(); track step.num) {
-            <div class="feature-card">
+            <div class="feature-card flex flex-col">
               <div
                 class="w-8 h-8 rounded-full bg-primary text-primary-content flex items-center justify-center text-sm font-bold mb-3"
               >
                 {{ step.num }}
               </div>
               <h3 class="font-heading font-semibold text-lg mb-2">{{ step.title }}</h3>
-              <p class="text-muted text-sm mb-3">{{ step.desc }}</p>
-              <div class="bg-base-300/50 rounded p-3 font-mono text-xs overflow-x-auto">
+              <p class="text-muted text-sm mb-3 flex-1">{{ step.desc }}</p>
+              <div
+                class="bg-base-300/50 rounded p-3 font-mono text-xs overflow-x-auto flex items-start justify-between gap-2"
+              >
                 <pre class="whitespace-pre-wrap">{{ step.code }}</pre>
+                <button
+                  class="btn btn-ghost btn-xs min-h-0 h-auto p-0.5 flex-shrink-0"
+                  (click)="copyToClipboard(step.copyCmd, $event)"
+                  [title]="copiedCmd() === step.copyCmd ? 'Copied!' : 'Copy'"
+                >
+                  @if (copiedCmd() === step.copyCmd) {
+                    <svg
+                      class="w-3.5 h-3.5 text-success"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  } @else {
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                      />
+                    </svg>
+                  }
+                </button>
               </div>
             </div>
           }
@@ -247,18 +342,18 @@ interface ExposedService {
           <!-- Right: env config -->
           <div>
             <h3 class="font-heading font-semibold text-lg mb-3">
-              Your local environment — auto-configured
+              Auto-configured via ASD Supabase Plugin
             </h3>
             <p class="text-muted text-sm mb-4">
-              These values are generated by Supabase and written to
-              <code class="text-primary">.env</code> automatically. Your Angular app reads them from
-              <code class="text-primary">environment.development.ts</code>.
+              <code class="text-primary">asd supabase bootstrap</code> starts your local instance
+              and writes the generated keys to <code class="text-primary">.env</code> automatically.
+              Your app reads them at runtime — no manual copying needed.
             </p>
             <div class="bg-base-200 rounded-lg border border-base-300 overflow-hidden">
               <div
                 class="flex items-center gap-2 px-4 py-2 bg-base-300/50 border-b border-base-300"
               >
-                <span class="text-xs text-muted font-mono">environment.development.ts</span>
+                <span class="text-xs text-muted font-mono">.env (auto-generated)</span>
               </div>
               <div class="p-4 font-mono text-xs leading-relaxed overflow-x-auto">
                 <pre class="whitespace-pre-wrap">{{ supabaseEnvSnippet() }}</pre>
@@ -344,21 +439,151 @@ interface ExposedService {
           and all services accessible via HTTPS tunnels.
         </p>
         <div
-          class="bg-base-200 rounded-lg border border-base-300 p-4 font-mono text-sm mb-8 max-w-3xl mx-auto overflow-x-auto"
+          class="bg-base-200 rounded-lg border border-base-300 overflow-hidden mb-8 max-w-3xl mx-auto"
         >
-          <p>
-            <span class="text-success">$</span> gh workflow run devinci.yml --ref $(git branch
-            --show-current)
-          </p>
-          <p>&nbsp;&nbsp;&nbsp;&nbsp;-f username="dev" -f password="secret"</p>
-          <p class="text-muted mt-1">Triggering cloud IDE on feature/my-branch...</p>
+          <div class="flex items-center gap-2 px-4 py-2 bg-base-300/50 border-b border-base-300">
+            <span class="text-xs text-muted font-mono">Setup (one-time)</span>
+          </div>
+          <div class="p-4 font-mono text-sm flex items-start justify-between gap-2">
+            <div>
+              <p><span class="text-success">$</span> asd gh setup</p>
+              <p class="text-muted text-xs mt-1">
+                Installs the DeVinCI workflow template as .github/workflows/terminal.yml
+              </p>
+            </div>
+            <button
+              class="btn btn-ghost btn-xs min-h-0 h-auto p-1 flex-shrink-0"
+              (click)="copyToClipboard('asd gh setup', $event)"
+              [title]="copiedCmd() === 'asd gh setup' ? 'Copied!' : 'Copy'"
+            >
+              @if (copiedCmd() === 'asd gh setup') {
+                <svg
+                  class="w-4 h-4 text-success"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              } @else {
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                  />
+                </svg>
+              }
+            </button>
+          </div>
+          <div
+            class="flex items-center gap-2 px-4 py-2 bg-base-300/50 border-b border-t border-base-300"
+          >
+            <span class="text-xs text-muted font-mono">Launch (every time)</span>
+          </div>
+          <div class="p-4 font-mono text-sm flex items-start justify-between gap-2">
+            <div>
+              <p><span class="text-success">$</span> asd gh terminal</p>
+              <p class="text-muted text-xs mt-1">
+                Interactively triggers the workflow — asks OS, shell, and credentials
+              </p>
+            </div>
+            <button
+              class="btn btn-ghost btn-xs min-h-0 h-auto p-1 flex-shrink-0"
+              (click)="copyToClipboard('asd gh terminal', $event)"
+              [title]="copiedCmd() === 'asd gh terminal' ? 'Copied!' : 'Copy'"
+            >
+              @if (copiedCmd() === 'asd gh terminal') {
+                <svg
+                  class="w-4 h-4 text-success"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+              } @else {
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                  />
+                </svg>
+              }
+            </button>
+          </div>
         </div>
+        <p class="text-center mb-8">
+          <a
+            href="https://github.com/asd-engineering/asd-angular-supabase/actions/workflows/devinci.yml"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-primary hover:underline text-sm"
+          >
+            View workflow on GitHub &rarr;
+          </a>
+        </p>
         <div class="grid md:grid-cols-3 gap-6">
           @for (feat of devinciFeatures(); track feat.title) {
-            <div class="feature-card">
+            <div class="feature-card flex flex-col">
               <div class="text-2xl mb-3">{{ feat.icon }}</div>
               <h3 class="font-heading font-semibold text-lg mb-2">{{ feat.title }}</h3>
-              <p class="text-muted text-sm">{{ feat.desc }}</p>
+              <p class="text-muted text-sm mb-3 flex-1">{{ feat.desc }}</p>
+              @if (feat.cmd) {
+                <div
+                  class="bg-base-300/50 rounded p-2 font-mono text-xs flex items-center justify-between gap-2"
+                >
+                  <span><span class="text-success">$</span> {{ feat.cmd }}</span>
+                  <button
+                    class="btn btn-ghost btn-xs min-h-0 h-auto p-0.5 flex-shrink-0"
+                    (click)="copyToClipboard(feat.cmd, $event)"
+                    [title]="copiedCmd() === feat.cmd ? 'Copied!' : 'Copy'"
+                  >
+                    @if (copiedCmd() === feat.cmd) {
+                      <svg
+                        class="w-3.5 h-3.5 text-success"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                    } @else {
+                      <svg
+                        class="w-3.5 h-3.5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                        />
+                      </svg>
+                    }
+                  </button>
+                </div>
+              }
             </div>
           }
         </div>
@@ -380,13 +605,21 @@ interface ExposedService {
         </p>
         <div class="grid sm:grid-cols-2 gap-6">
           @for (feat of claudeFeatures(); track feat.title) {
-            <div class="feature-card">
+            <a
+              [href]="feat.url"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="feature-card group hover:border-primary/40 transition-colors cursor-pointer no-underline block"
+            >
               <h3 class="font-heading font-semibold text-lg mb-2">
                 <code class="text-primary text-sm mr-2">{{ feat.tag }}</code>
                 {{ feat.title }}
               </h3>
-              <p class="text-muted text-sm">{{ feat.desc }}</p>
-            </div>
+              <p class="text-muted text-sm mb-3">{{ feat.desc }}</p>
+              <span class="text-primary text-sm font-semibold group-hover:underline"
+                >View source &rarr;</span
+              >
+            </a>
           }
         </div>
       </div>
@@ -415,10 +648,44 @@ interface ExposedService {
           }
         </div>
         <div
-          class="bg-base-200 rounded-lg border border-base-300 p-4 font-mono text-sm mt-8 max-w-xl mx-auto overflow-x-auto"
+          class="bg-base-200 rounded-lg border border-base-300 p-4 font-mono text-sm mt-8 max-w-xl mx-auto overflow-x-auto flex items-start justify-between gap-2"
         >
-          <p><span class="text-success">$</span> asd run test-e2e</p>
-          <p class="text-muted mt-1">Running Playwright E2E across Chromium, Firefox, WebKit...</p>
+          <div>
+            <p><span class="text-success">$</span> asd run test-e2e</p>
+            <p class="text-muted mt-1">
+              Running Playwright E2E across Chromium, Firefox, WebKit...
+            </p>
+          </div>
+          <button
+            class="btn btn-ghost btn-xs min-h-0 h-auto p-1 flex-shrink-0"
+            (click)="copyToClipboard('asd run test-e2e', $event)"
+            [title]="copiedCmd() === 'asd run test-e2e' ? 'Copied!' : 'Copy'"
+          >
+            @if (copiedCmd() === 'asd run test-e2e') {
+              <svg
+                class="w-4 h-4 text-success"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            } @else {
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                />
+              </svg>
+            }
+          </button>
         </div>
       </div>
     </section>
@@ -440,12 +707,14 @@ interface ExposedService {
 })
 export class Home implements OnInit {
   protected readonly exposedServices = signal<ExposedService[]>([])
-  protected readonly copied = signal(false)
+  protected readonly copiedCmd = signal('')
 
-  copyToClipboard(text: string) {
+  copyToClipboard(text: string, event?: Event) {
+    event?.preventDefault()
+    event?.stopPropagation()
     navigator.clipboard.writeText(text).then(() => {
-      this.copied.set(true)
-      setTimeout(() => this.copied.set(false), 2000)
+      this.copiedCmd.set(text)
+      setTimeout(() => this.copiedCmd.set(''), 2000)
     })
   }
 
@@ -459,18 +728,39 @@ export class Home implements OnInit {
           )
       })
       .catch(() => {})
+
+    fetch('/local-services.json')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) this.devTools.set(data)
+      })
+      .catch(() => {})
   }
 
   protected readonly devTools = signal([
     {
+      name: 'Studio',
+      desc: 'Browse tables, manage RLS policies, run SQL queries — Supabase dashboard.',
+      cmd: 'asd run supa-start',
+      url: 'http://studio.localhost',
+    },
+    {
+      name: 'Mailpit',
+      desc: 'All auth emails (signup, password reset, magic links) captured locally.',
+      cmd: 'asd run supa-start',
+      url: 'http://mailpit.localhost',
+    },
+    {
       name: 'Code Studio',
       desc: 'VS Code in your browser — full editor with extensions and terminal.',
       cmd: 'asd code start',
+      url: 'http://asd.localhost/codeserver/',
     },
     {
       name: 'Terminal',
       desc: 'Browser terminal via ttyd — run any command from your browser.',
       cmd: 'asd terminal start',
+      url: 'http://asd.localhost/ttyd/',
     },
   ])
 
@@ -480,25 +770,28 @@ export class Home implements OnInit {
       title: 'Install ASD CLI',
       desc: 'One-line install on Linux, macOS, or Windows.',
       code: 'curl -fsSL https://raw.githubusercontent.com/asd-engineering/asd-cli/main/install.sh | bash',
+      copyCmd:
+        'curl -fsSL https://raw.githubusercontent.com/asd-engineering/asd-cli/main/install.sh | bash',
     },
     {
       num: 2,
       title: 'Run asd run dev',
       desc: 'One command starts Supabase, Caddy, Angular, code-server, ttyd, and tunnels.',
       code: '$ asd run dev\n# Everything configured in asd.yaml — just run it.',
+      copyCmd: 'asd run dev',
     },
   ])
 
-  protected readonly supabaseEnvSnippet = signal(`export const environment = {
-  supabaseUrl: 'http://127.0.0.1:54321',
-  supabaseAnonKey: 'eyJhbGci...CRXP1A7W...',
-}
+  protected readonly supabaseEnvSnippet = signal(`# Generated by asd supabase bootstrap
+SUPABASE_URL=http://127.0.0.1:54321
+SUPABASE_ANON_KEY=eyJhbGci...CRXP1A7W...
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGci...
 
-// Supabase local services:
-//   API + Auth   → http://127.0.0.1:54321
-//   PostgreSQL   → postgresql://postgres:postgres@127.0.0.1:54322/postgres
-//   Studio       → http://127.0.0.1:54323
-//   Mailpit      → http://127.0.0.1:54324`)
+# Local services (auto-detected)
+# API + Auth    → http://127.0.0.1:54321
+# PostgreSQL    → 127.0.0.1:54322
+# Studio        → http://127.0.0.1:54323
+# Mailpit       → http://127.0.0.1:54324`)
 
   protected readonly supabaseTips = signal([
     {
@@ -572,16 +865,19 @@ export class Home implements OnInit {
       icon: '{}',
       title: 'VS Code in Browser',
       desc: 'code-server gives you a full VS Code experience with extensions, themes, and terminal — accessible via HTTPS.',
+      cmd: 'asd code start',
     },
     {
       icon: '>_',
       title: 'Browser Terminal',
       desc: 'ttyd provides a real terminal in your browser. Run asd commands, git, npm — anything you need.',
+      cmd: 'asd terminal start',
     },
     {
       icon: '////',
       title: 'Cross-Platform',
       desc: 'Works on Linux and macOS runners. code-server on Linux/macOS, ttyd on all platforms including Windows.',
+      cmd: '',
     },
   ])
 
@@ -590,21 +886,25 @@ export class Home implements OnInit {
       tag: 'CLAUDE.md',
       title: 'Project Instructions',
       desc: 'Claude reads CLAUDE.md automatically — tech stack, commands, architecture rules, and conventions. No manual onboarding needed.',
+      url: 'https://github.com/asd-engineering/asd-angular-supabase/blob/main/CLAUDE.md',
     },
     {
       tag: 'hooks/',
       title: 'Safety Hooks',
       desc: 'asd-guard.sh prompts before internet exposure. inject-ai-session.sh adds audit trails to tickets. Guardrails built in.',
+      url: 'https://github.com/asd-engineering/asd-angular-supabase/tree/main/.claude/hooks',
     },
     {
       tag: '/skills',
       title: 'Slash Commands',
       desc: 'Skills like /asd-setup, /playwright-ui-testing, and /code-review give Claude specialized capabilities for this project.',
+      url: 'https://github.com/asd-engineering/asd-angular-supabase/tree/main/.claude/skills',
     },
     {
       tag: 'asd://',
       title: 'Vault Credentials',
       desc: 'ASD Vault injects secrets at runtime via asd:// references. Claude never sees raw API keys — only template references.',
+      url: 'https://github.com/asd-engineering/asd-angular-supabase/blob/main/tpl.env',
     },
   ])
 
