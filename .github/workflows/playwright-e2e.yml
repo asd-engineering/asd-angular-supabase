@@ -11,6 +11,9 @@ jobs:
   e2e-tests:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      ASD_API_KEY: ${{ secrets.ASD_API_KEY }}
+      MOLLIE_API_KEY: ${{ secrets.MOLLIE_API_KEY }}
     steps:
       - uses: actions/checkout@v4
 
@@ -56,15 +59,13 @@ jobs:
           asd --version
 
       - name: Login to ASD platform
-        if: ${{ secrets.ASD_API_KEY != '' }}
-        env:
-          ASD_API_KEY: ${{ secrets.ASD_API_KEY }}
+        if: env.ASD_API_KEY != ''
         run: |
           asd login key "$ASD_API_KEY"
           echo "ASD login complete"
 
       - name: Create tunnel
-        if: ${{ secrets.ASD_API_KEY != '' }}
+        if: env.ASD_API_KEY != ''
         run: |
           asd init --yes
           asd caddy start
@@ -75,7 +76,7 @@ jobs:
           echo "Tunnel URL: ${API_TUNNEL_URL}"
 
       - name: Verify tunnel delivers content
-        if: ${{ secrets.ASD_API_KEY != '' }}
+        if: env.ASD_API_KEY != ''
         run: |
           mkdir -p /tmp/www
           echo '<html><body><h1>ASD Tunnel Works!</h1></body></html>' > /tmp/www/index.html
@@ -90,9 +91,9 @@ jobs:
           kill $STATIC_PID
           wait $STATIC_PID 2>/dev/null || true
 
-      - name: Set Mollie env
-        if: ${{ secrets.MOLLIE_API_KEY != '' }}
-        run: echo "MOLLIE_API_KEY=${{ secrets.MOLLIE_API_KEY }}" >> "$GITHUB_ENV"
+      - name: Set Mollie env for tests
+        if: env.MOLLIE_API_KEY != ''
+        run: echo "MOLLIE_API_KEY=${MOLLIE_API_KEY}" >> "$GITHUB_ENV"
 
       - name: Run Playwright tests
         env:
