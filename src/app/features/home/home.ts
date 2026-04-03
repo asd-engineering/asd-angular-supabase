@@ -372,24 +372,24 @@ export class Home implements OnInit {
 
   protected readonly yamlSnippet = signal(`network:
   services:
-    # public: true = create tunnel (opt-in)
+    # public: true = create HTTPS tunnel
     # public: false = local only (default)
     supabase:studio:
-      public: true    # tunnel Studio UI
+      public: true
     supabase:mailpit:
-      public: true    # tunnel email inbox
+      public: true
     angular:dev:
       public: true
-      subdomain: app  # main app tunnel
+      subdomain: app
       env:
         # Kong API auto-routes through app:
-        # /auth/v1, /rest/v1, /storage/v1,
-        # /functions/v1, /realtime/v1
+        # /auth/v1  /rest/v1  /storage/v1
+        # /functions/v1  /realtime/v1
         API_TUNNEL_URL: '\${{ macro.exposedOrigin() }}'
     codeserver:
-      public: false   # private, Caddy auth
+      public: false
     ttyd:
-      public: false   # private, Caddy auth`)
+      public: false`)
 
   protected readonly yamlFeatures = signal([
     {
