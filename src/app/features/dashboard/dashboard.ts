@@ -11,6 +11,7 @@ import { AuthService } from '@core/services/auth.service'
       <div class="flex items-center justify-between mb-8">
         <h1 class="text-3xl font-bold font-heading">Dashboard</h1>
         <div class="flex gap-2">
+          <a routerLink="/dashboard/subscription" class="btn btn-ghost btn-sm">Subscription</a>
           <a routerLink="/dashboard/orders" class="btn btn-ghost btn-sm">Orders</a>
           <a routerLink="/dashboard/settings" class="btn btn-ghost btn-sm">Settings</a>
         </div>

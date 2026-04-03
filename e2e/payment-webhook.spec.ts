@@ -22,7 +22,7 @@ function webhookUrl(): string {
   return `${base}/functions/v1/mollie-webhook?ref=${GITHUB_SHA}`
 }
 
-test.describe('Payment webhook via ASD tunnel', () => {
+test.describe('Subscription flow via ASD tunnel', () => {
   test.skip(
     !HAS_TUNNEL_ENV,
     'Requires SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY, and API_TUNNEL_URL',
@@ -45,6 +45,7 @@ test.describe('Payment webhook via ASD tunnel', () => {
     const oldUser = existing?.users?.find((u) => u.email === testEmail)
     if (oldUser) {
       await adminClient.from('orders').delete().eq('user_id', oldUser.id)
+      await adminClient.from('subscriptions').delete().eq('user_id', oldUser.id)
       await adminClient.auth.admin.deleteUser(oldUser.id)
     }
 
@@ -75,20 +76,21 @@ test.describe('Payment webhook via ASD tunnel', () => {
       auth: { autoRefreshToken: false, persistSession: false },
     })
     await adminClient.from('orders').delete().eq('user_id', userId)
+    await adminClient.from('subscriptions').delete().eq('user_id', userId)
     await adminClient.auth.admin.deleteUser(userId)
   })
 
-  test('create payment with tunnel webhook URL', async ({ request }) => {
-    const response = await request.post(`${SUPABASE_URL}/functions/v1/create-payment`, {
+  test('create subscription with tunnel webhook URL', async ({ request }) => {
+    const response = await request.post(`${SUPABASE_URL}/functions/v1/create-subscription`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         apikey: SUPABASE_ANON_KEY,
         'Content-Type': 'application/json',
       },
       data: {
-        amount: 10.0,
-        description: `E2E payment test (${GITHUB_SHA.slice(0, 7)})`,
-        redirectUrl: 'http://localhost:4200/payment/success',
+        planName: 'Pro',
+        amount: 29.0,
+        redirectUrl: 'http://localhost:4200/payment/callback',
         webhookUrl: webhookUrl(),
       },
     })
@@ -97,10 +99,13 @@ test.describe('Payment webhook via ASD tunnel', () => {
     const body = await response.json()
     expect(body.checkoutUrl).toBeTruthy()
     expect(body.orderId).toBeTruthy()
+    expect(body.subscriptionId).toBeTruthy()
 
     const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false },
     })
+
+    // Verify order created and linked to subscription
     const { data: order } = await adminClient
       .from('orders')
       .select('*')
@@ -110,19 +115,32 @@ test.describe('Payment webhook via ASD tunnel', () => {
     expect(order).toBeTruthy()
     expect(order!.status).toBe('pending')
     expect(order!.mollie_payment_id).toBeTruthy()
+    expect(order!.subscription_id).toBe(body.subscriptionId)
+
+    // Verify subscription created
+    const { data: sub } = await adminClient
+      .from('subscriptions')
+      .select('*')
+      .eq('id', body.subscriptionId)
+      .single()
+
+    expect(sub).toBeTruthy()
+    expect(sub!.plan_name).toBe('Pro')
+    expect(sub!.status).toBe('pending')
+    expect(sub!.mollie_customer_id).toBeTruthy()
   })
 
   test('webhook POST delivered through tunnel', async ({ request }) => {
-    const createResponse = await request.post(`${SUPABASE_URL}/functions/v1/create-payment`, {
+    const createResponse = await request.post(`${SUPABASE_URL}/functions/v1/create-subscription`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         apikey: SUPABASE_ANON_KEY,
         'Content-Type': 'application/json',
       },
       data: {
-        amount: 5.0,
-        description: `Tunnel webhook test (${GITHUB_SHA.slice(0, 7)})`,
-        redirectUrl: 'http://localhost:4200/payment/success',
+        planName: 'Starter',
+        amount: 9.0,
+        redirectUrl: 'http://localhost:4200/payment/callback',
         webhookUrl: webhookUrl(),
       },
     })
@@ -152,25 +170,25 @@ test.describe('Payment webhook via ASD tunnel', () => {
     expect([200, 500]).toContain(webhookResponse.status())
   })
 
-  test('full Mollie checkout flow', async ({ page, request }) => {
+  test('full Mollie subscription checkout flow', async ({ page, request }) => {
     test.setTimeout(120_000)
 
-    const createResponse = await request.post(`${SUPABASE_URL}/functions/v1/create-payment`, {
+    const createResponse = await request.post(`${SUPABASE_URL}/functions/v1/create-subscription`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         apikey: SUPABASE_ANON_KEY,
         'Content-Type': 'application/json',
       },
       data: {
-        amount: 1.0,
-        description: `Full checkout test (${GITHUB_SHA.slice(0, 7)})`,
-        redirectUrl: 'http://localhost:4200/payment/success',
+        planName: 'Pro',
+        amount: 29.0,
+        redirectUrl: 'http://localhost:4200/payment/callback',
         webhookUrl: webhookUrl(),
       },
     })
 
     expect(createResponse.status()).toBe(200)
-    const { checkoutUrl, orderId } = await createResponse.json()
+    const { checkoutUrl, orderId, subscriptionId } = await createResponse.json()
     expect(checkoutUrl).toBeTruthy()
 
     // Navigate to Mollie test checkout page
@@ -200,12 +218,15 @@ test.describe('Payment webhook via ASD tunnel', () => {
     await expect(continueButton).toBeVisible({ timeout: 5_000 })
     await continueButton.click()
 
-    // Poll DB for status change (Mollie webhook should update via tunnel)
+    // Poll DB for order status change (Mollie webhook should update via tunnel)
     const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false },
     })
 
-    let finalStatus = 'pending'
+    let finalOrderStatus = 'pending'
+    let finalSubStatus = 'pending'
+    let mollieSubId: string | null = null
+
     for (let attempt = 0; attempt < 30; attempt++) {
       const { data: order } = await adminClient
         .from('orders')
@@ -214,14 +235,42 @@ test.describe('Payment webhook via ASD tunnel', () => {
         .single()
 
       if (order?.status && order.status !== 'pending') {
-        finalStatus = order.status
-        break
+        finalOrderStatus = order.status
       }
+
+      const { data: sub } = await adminClient
+        .from('subscriptions')
+        .select('status, mollie_subscription_id')
+        .eq('id', subscriptionId)
+        .single()
+
+      if (sub) {
+        finalSubStatus = sub.status
+        mollieSubId = sub.mollie_subscription_id
+      }
+
+      // Break early if order is paid (subscription activation is best-effort)
+      if (finalOrderStatus === 'paid') break
 
       await new Promise((r) => setTimeout(r, 2_000))
     }
 
-    console.log(`Order ${orderId} final status: ${finalStatus}`)
-    expect(finalStatus).toBe('paid')
+    console.log(`Order ${orderId} final status: ${finalOrderStatus}`)
+    console.log(
+      `Subscription ${subscriptionId} status: ${finalSubStatus}, mollie_id: ${mollieSubId}`,
+    )
+
+    expect(finalOrderStatus).toBe('paid')
+
+    // Subscription activation is best-effort in test mode (mandates may not work)
+    // Log the result but don't fail the test if it stays pending
+    if (finalSubStatus === 'active') {
+      expect(mollieSubId).toBeTruthy()
+      console.log('Subscription activated successfully')
+    } else {
+      console.log(
+        `Subscription not activated (status: ${finalSubStatus}) — expected in Mollie test mode`,
+      )
+    }
   })
 })

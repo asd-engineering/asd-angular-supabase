@@ -1,6 +1,6 @@
-import { Component, inject, signal } from '@angular/core'
+import { Component, inject, signal, OnInit } from '@angular/core'
 import { Router } from '@angular/router'
-import { PaymentService } from '@core/services/payment.service'
+import { PaymentService, Subscription } from '@core/services/payment.service'
 import { AuthService } from '@core/services/auth.service'
 
 interface Plan {
@@ -39,13 +39,21 @@ interface Plan {
                 }
               </ul>
               <div class="card-actions w-full">
-                <button class="btn btn-primary w-full" [disabled]="loading()" (click)="buy(plan)">
-                  @if (loading()) {
-                    <span class="loading loading-spinner loading-sm"></span>
-                  } @else {
-                    Get Started
-                  }
-                </button>
+                @if (isCurrentPlan(plan.name)) {
+                  <button class="btn btn-success w-full" disabled>Current Plan</button>
+                } @else {
+                  <button
+                    class="btn btn-primary w-full"
+                    [disabled]="loading()"
+                    (click)="subscribe(plan)"
+                  >
+                    @if (loading()) {
+                      <span class="loading loading-spinner loading-sm"></span>
+                    } @else {
+                      Get Started
+                    }
+                  </button>
+                }
               </div>
             </div>
           </div>
@@ -58,13 +66,14 @@ interface Plan {
     </div>
   `,
 })
-export class Pricing {
+export class Pricing implements OnInit {
   private readonly payment = inject(PaymentService)
   private readonly auth = inject(AuthService)
   private readonly router = inject(Router)
 
   protected readonly loading = signal(false)
   protected readonly error = signal<string | null>(null)
+  protected readonly activeSubscription = signal<Subscription | null>(null)
 
   protected readonly plans: Plan[] = [
     {
@@ -92,7 +101,22 @@ export class Pricing {
     },
   ]
 
-  async buy(plan: Plan) {
+  async ngOnInit() {
+    if (this.auth.isAuthenticated()) {
+      try {
+        const sub = await this.payment.getActiveSubscription()
+        this.activeSubscription.set(sub)
+      } catch {
+        // Not critical — pricing page still works without subscription info
+      }
+    }
+  }
+
+  isCurrentPlan(planName: string): boolean {
+    return this.activeSubscription()?.plan_name === planName
+  }
+
+  async subscribe(plan: Plan) {
     if (!this.auth.isAuthenticated()) {
       await this.router.navigate(['/auth/login'])
       return
@@ -102,9 +126,9 @@ export class Pricing {
     this.error.set(null)
 
     try {
-      const { checkoutUrl } = await this.payment.createPayment(
+      const { checkoutUrl } = await this.payment.createSubscription(
+        plan.name,
         plan.price,
-        `${plan.name} Plan`,
         `${window.location.origin}/payment/callback`,
       )
       window.location.href = checkoutUrl
