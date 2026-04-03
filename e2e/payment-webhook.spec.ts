@@ -176,27 +176,29 @@ test.describe('Payment webhook via ASD tunnel', () => {
     // Navigate to Mollie test checkout page
     await page.goto(checkoutUrl)
 
-    // Step 1: Select a payment method (Mollie shows Card, iDEAL, etc.)
+    // Step 1: Select "Card" payment method
     const cardMethod = page.locator('text=Card').first()
     await expect(cardMethod).toBeVisible({ timeout: 10_000 })
     await cardMethod.click()
 
-    // Step 2: Mollie test mode shows a status selection page — select "Paid"
-    const paidButton = page
-      .locator('button, input, [data-status="paid"], a')
-      .filter({ hasText: /paid/i })
-      .first()
-    await expect(paidButton).toBeVisible({ timeout: 10_000 })
-    await paidButton.click()
+    // Step 2: Fill card form inside PCI-compliant iframe
+    const cardFrame = page.frameLocator('iframe').nth(1)
+    await cardFrame.locator('[placeholder*="1234"]').fill('4543 4740 0224 9996')
+    await cardFrame.locator('[placeholder*="MM"]').fill('12/30')
+    await cardFrame.locator('[placeholder*="CVC"]').fill('123')
 
-    // Step 3: Confirm if needed
-    const continueButton = page
-      .locator('button, input, a')
-      .filter({ hasText: /continue|confirm|submit/i })
-      .first()
-    if (await continueButton.isVisible({ timeout: 5_000 }).catch(() => false)) {
-      await continueButton.click()
-    }
+    // Step 3: Fill card holder and submit (all inside Mollie card component iframe)
+    await cardFrame.locator('[placeholder*="Full name"]').fill('Test Cardholder')
+    await cardFrame.locator('text=Pay with card').click()
+
+    // Step 4: Mollie test status page — select "Paid" radio and continue
+    const paidRadio = page.getByRole('radio', { name: 'Paid' })
+    await expect(paidRadio).toBeVisible({ timeout: 10_000 })
+    await paidRadio.check()
+
+    const continueButton = page.getByRole('button', { name: /continue/i }).first()
+    await expect(continueButton).toBeVisible({ timeout: 5_000 })
+    await continueButton.click()
 
     // Poll DB for status change (Mollie webhook should update via tunnel)
     const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
