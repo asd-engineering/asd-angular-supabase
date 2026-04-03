@@ -73,13 +73,27 @@ jobs:
           curl -fsSL https://asd.host/install.sh | VERSION=v2.5.0-beta.8 bash
           asd --version
 
+      - name: Provision tunnel credentials
+        if: steps.secrets.outputs.available == 'true'
+        run: |
+          RESPONSE=$(curl -sf "https://api.asd.host/functions/v1/credential-provision" \
+            -H "X-API-Key: ${{ secrets.ASD_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{"project":"${{ github.repository }}","ttl_minutes":30}')
+          echo "::add-mask::$(echo "$RESPONSE" | jq -r '.tunnel_client_secret')"
+          echo "ASD_CLIENT_ID=$(echo "$RESPONSE" | jq -r '.tunnel_client_id')" >> "$GITHUB_ENV"
+          echo "ASD_CLIENT_SECRET=$(echo "$RESPONSE" | jq -r '.tunnel_client_secret')" >> "$GITHUB_ENV"
+          echo "ASD_TUNNEL_HOST=$(echo "$RESPONSE" | jq -r '.tunnel_fqdn // .tunnel_host')" >> "$GITHUB_ENV"
+          echo "ASD_TUNNEL_PORT=$(echo "$RESPONSE" | jq -r '.tunnel_port')" >> "$GITHUB_ENV"
+
       - name: Initialize ASD and apply network config
         if: steps.secrets.outputs.available == 'true'
-        env:
-          ASD_API_KEY: ${{ secrets.ASD_API_KEY }}
         run: |
-          asd login key "$ASD_API_KEY"
           asd init --yes
+          echo "ASD_CLIENT_ID=${ASD_CLIENT_ID}" >> .env
+          echo "ASD_CLIENT_SECRET=${ASD_CLIENT_SECRET}" >> .env
+          echo "ASD_TUNNEL_HOST=${ASD_TUNNEL_HOST}" >> .env
+          echo "ASD_TUNNEL_PORT=${ASD_TUNNEL_PORT}" >> .env
           asd caddy start
           asd net apply --seed --caddy --tunnel
           asd supabase extract
