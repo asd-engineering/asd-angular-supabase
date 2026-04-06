@@ -132,8 +132,17 @@ export class Pricing implements OnInit {
         `${window.location.origin}/payment/callback`,
       )
       window.location.href = checkoutUrl
-    } catch (e) {
-      this.error.set((e as Error).message || 'Payment failed. Please try again.')
+    } catch (e: unknown) {
+      const err = e as Record<string, unknown>
+      const contextBody = (err?.['context'] as Record<string, unknown>)?.['body'] as Record<
+        string,
+        unknown
+      >
+      const message =
+        (contextBody?.['error'] as string) ||
+        (err?.['message'] as string) ||
+        'Payment failed. Please try again.'
+      this.error.set(message)
     } finally {
       this.loading.set(false)
     }

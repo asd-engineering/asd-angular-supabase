@@ -12,6 +12,15 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const mollieApiKey = Deno.env.get('MOLLIE_API_KEY')
+    if (!mollieApiKey) {
+      console.error('MOLLIE_API_KEY is not configured')
+      return new Response(JSON.stringify({ error: 'MOLLIE_API_KEY not configured' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_ANON_KEY')!,
@@ -37,13 +46,22 @@ Deno.serve(async (req) => {
       )
     }
 
-    const mollieClient = createMollieClient({ apiKey: Deno.env.get('MOLLIE_API_KEY')! })
+    const mollieClient = createMollieClient({ apiKey: mollieApiKey })
 
     // Create or reuse Mollie customer
-    const customer = await mollieClient.customers.create({
-      name: user.email!,
-      email: user.email!,
-    })
+    let customer
+    try {
+      customer = await mollieClient.customers.create({
+        name: user.email!,
+        email: user.email!,
+      })
+    } catch (customerError) {
+      console.error('Mollie customer creation failed:', (customerError as Error).message)
+      return new Response(
+        JSON.stringify({ error: `Customer creation failed: ${(customerError as Error).message}` }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
+    }
 
     // Insert subscription record
     const { data: subscription, error: subError } = await supabase
@@ -114,6 +132,7 @@ Deno.serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     )
   } catch (error) {
+    console.error('create-subscription error:', (error as Error).message)
     return new Response(JSON.stringify({ error: (error as Error).message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
