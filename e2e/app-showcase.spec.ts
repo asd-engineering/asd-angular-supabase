@@ -63,9 +63,11 @@ test.describe('App showcase — public pages', () => {
 
   test('payment callback page renders', async ({ page }) => {
     await page.goto('/payment/callback')
-    await expect(page.locator('h1')).toContainText('Payment Submitted')
-    await expect(page.locator('text=Your payment is being processed')).toBeVisible()
-    await expect(page.locator('a[href="/dashboard/orders"]:has-text("View Orders")')).toBeVisible()
+    await expect(page.locator('h1')).toContainText('Subscription Started')
+    await expect(page.locator('text=Your subscription is being activated')).toBeVisible()
+    await expect(
+      page.locator('a[href="/dashboard/subscription"]:has-text("View Subscription")'),
+    ).toBeVisible()
     await expect(page.locator('a[href="/"]:has-text("Back to Home")')).toBeVisible()
   })
 })
