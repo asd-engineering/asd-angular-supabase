@@ -13,6 +13,10 @@ export const dashboardRoutes: Routes = [
         path: 'orders',
         loadComponent: () => import('./orders/orders').then((m) => m.Orders),
       },
+      {
+        path: 'subscription',
+        loadComponent: () => import('./subscription/subscription').then((m) => m.Subscription),
+      },
     ],
   },
 ]

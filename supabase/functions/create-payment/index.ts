@@ -12,6 +12,15 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const mollieApiKey = Deno.env.get('MOLLIE_API_KEY')
+    if (!mollieApiKey) {
+      console.error('MOLLIE_API_KEY is not configured')
+      return new Response(JSON.stringify({ error: 'MOLLIE_API_KEY not configured' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_ANON_KEY')!,
@@ -52,7 +61,7 @@ Deno.serve(async (req) => {
     }
 
     // Create Mollie payment
-    const mollieClient = createMollieClient({ apiKey: Deno.env.get('MOLLIE_API_KEY')! })
+    const mollieClient = createMollieClient({ apiKey: mollieApiKey })
     const payment = await mollieClient.payments.create({
       amount: { currency: 'EUR', value: Number(amount).toFixed(2) },
       description: description || 'Payment',
@@ -72,6 +81,7 @@ Deno.serve(async (req) => {
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     )
   } catch (error) {
+    console.error('create-payment error:', (error as Error).message)
     return new Response(JSON.stringify({ error: (error as Error).message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -171,14 +171,38 @@ The ASD Hub provides a unified dashboard with four views:
 - **Code Studio** — VS Code (code-server) in the browser
 - **Terminal** — ttyd browser terminal
 
-## Mollie Payment Integration
+## Mollie Payment & Subscription Integration
 
 ### Architecture
 
-Two Supabase Edge Functions handle the payment flow:
+Three Supabase Edge Functions handle payments and subscriptions:
 
-- **`create-payment`** — JWT-authenticated, creates a Mollie payment and stores an order
-- **`mollie-webhook`** — No JWT (Mollie calls it), receives `application/x-www-form-urlencoded` POST with payment ID, verifies status via Mollie API, updates order
+- **`create-payment`** — JWT-authenticated, creates a one-time Mollie payment and stores an order
+- **`create-subscription`** — JWT-authenticated, creates a Mollie customer + "first" payment to establish a mandate for recurring billing
+- **`mollie-webhook`** — No JWT (Mollie calls it), receives `application/x-www-form-urlencoded` POST with payment ID, verifies status via Mollie API, updates order and subscription status
+
+### Subscription Flow
+
+Mollie subscriptions require a 3-step sequence:
+
+1. **Create Customer** — `create-subscription` creates a Mollie customer and a `subscriptions` row (status: `pending`)
+2. **First Payment** — user completes checkout (`sequenceType: 'first'`), which establishes a payment mandate
+3. **Webhook Activates Subscription** — when the first payment succeeds, the webhook calls `customers_subscriptions.create()` on Mollie, setting up automatic monthly charges. Subscription status becomes `active`.
+
+Subsequent recurring payments are handled automatically by Mollie. Each recurring charge triggers the webhook, which inserts a new `orders` row linked to the subscription.
+
+### Database Schema
+
+| Table           | Purpose                                                                                                 |
+| --------------- | ------------------------------------------------------------------------------------------------------- |
+| `orders`        | Individual payment records (one-time or recurring), linked to `subscriptions` via `subscription_id`     |
+| `subscriptions` | Recurring billing records with `mollie_customer_id`, `mollie_subscription_id`, plan details, and status |
+
+### Frontend Flow
+
+- **Pricing page** (`/pricing`) — shows plans with "Get Started" buttons. Calls `create-subscription` to initiate checkout. Shows "Current Plan" badge for active subscriptions.
+- **Payment callback** (`/payment/callback`) — confirmation page after Mollie checkout, links to subscription dashboard.
+- **Subscription dashboard** (`/dashboard/subscription`) — shows active plan name, amount, billing interval, status, and start date.
 
 ### Webhook Delivery via ASD Tunnel
 
@@ -198,10 +222,12 @@ https://{prefix}api-{client_id}.{tunnel_host}/functions/v1/mollie-webhook
 
 1. Create test user via Supabase Admin API
 2. Sign in to get JWT access token
-3. Call `create-payment` edge function with tunnel webhook URL
+3. Call `create-subscription` edge function with tunnel webhook URL
 4. Navigate to Mollie test checkout → select "Paid"
-5. Mollie POSTs to webhook via tunnel → edge function updates order status
-6. Poll database to verify order status changed to `paid`
+5. Mollie POSTs to webhook via tunnel → webhook updates order status + activates subscription
+6. Poll database to verify order status → `paid` and subscription status → `active`
+
+**Note:** In Mollie test mode, subscription activation after the first payment may fail (test mandates may not be valid). The E2E test treats subscription activation as best-effort — it verifies the order status update works and logs the subscription result.
 
 ### Commands
 
@@ -331,9 +357,9 @@ src/app/
 ├── features/          # Feature routes (lazy-loaded)
 │   ├── auth/          # Login, signup, callback
 │   ├── home/          # Public home page
-│   ├── pricing/       # Plan selection + Mollie checkout
-│   ├── payment/       # Payment callback page
-│   └── dashboard/     # Protected dashboard + settings
+│   ├── pricing/       # Plan selection + Mollie subscription checkout
+│   ├── payment/       # Payment/subscription callback page
+│   └── dashboard/     # Protected dashboard + settings + subscription
 ├── layouts/           # Page layouts
 │   ├── main-layout/   # Header + footer + content
 │   └── auth-layout/   # Centered card layout

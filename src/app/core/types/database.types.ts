@@ -44,6 +44,7 @@ export type Database = {
           metadata: Json | null
           mollie_payment_id: string | null
           status: string | null
+          subscription_id: string | null
           updated_at: string | null
           user_id: string
         }
@@ -56,6 +57,7 @@ export type Database = {
           metadata?: Json | null
           mollie_payment_id?: string | null
           status?: string | null
+          subscription_id?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -67,6 +69,57 @@ export type Database = {
           id?: string
           metadata?: Json | null
           mollie_payment_id?: string | null
+          status?: string | null
+          subscription_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscriptions: {
+        Row: {
+          amount: number
+          created_at: string | null
+          currency: string | null
+          id: string
+          interval: string | null
+          mollie_customer_id: string
+          mollie_subscription_id: string | null
+          plan_name: string
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          interval?: string | null
+          mollie_customer_id: string
+          mollie_subscription_id?: string | null
+          plan_name: string
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          currency?: string | null
+          id?: string
+          interval?: string | null
+          mollie_customer_id?: string
+          mollie_subscription_id?: string | null
+          plan_name?: string
           status?: string | null
           updated_at?: string | null
           user_id?: string
