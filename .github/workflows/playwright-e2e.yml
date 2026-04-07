@@ -34,7 +34,7 @@ jobs:
 
       - name: Install ASD CLI
         run: |
-          curl -fsSL https://asd.host/install.sh | VERSION=v2.5.0-beta.8 bash
+          curl -fsSL https://asd.host/install.sh | bash
           asd --version
 
       - name: Start Supabase
