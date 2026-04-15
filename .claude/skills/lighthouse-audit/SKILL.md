@@ -20,14 +20,9 @@ Run Lighthouse on key pages. Score against thresholds. Report top 3 actionable i
 
 Below minimum = **FAIL**. Between minimum and target = **WARN**.
 
-## Key Pages
+## Discover Pages
 
-| Page      | URL           | Priority |
-| --------- | ------------- | -------- |
-| Landing   | `/`           | High     |
-| Pricing   | `/pricing`    | High     |
-| Login     | `/auth/login` | Medium   |
-| Dashboard | `/dashboard`  | Medium   |
+Read `src/app/app.routes.ts` and `src/app/app.routes.server.ts` to discover all routes. Audit every page route — prioritize prerendered/public routes (high: landing, conversion pages) then client-rendered/auth routes (medium).
 
 ## Run
 

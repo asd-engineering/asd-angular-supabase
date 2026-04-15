@@ -9,16 +9,9 @@ user-invocable: true
 
 Run WCAG 2.1 AA audit via axe-core (Playwright) or Lighthouse. Report violations by severity with specific fixes.
 
-## Key Pages
+## Discover Pages
 
-| Page      | URL                   | Auth |
-| --------- | --------------------- | ---- |
-| Landing   | `/`                   | No   |
-| Pricing   | `/pricing`            | No   |
-| Login     | `/auth/login`         | No   |
-| Signup    | `/auth/signup`        | No   |
-| Dashboard | `/dashboard`          | Yes  |
-| Settings  | `/dashboard/settings` | Yes  |
+Read `src/app/app.routes.ts` and `src/app/app.routes.server.ts` to discover all routes, their render modes, and auth requirements. Audit every route that renders a page — prioritize public-facing routes first, then authenticated routes.
 
 ## Run Audit
 
