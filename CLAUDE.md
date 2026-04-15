@@ -2,33 +2,69 @@
 
 ## FDAID (Feedback-Driven AI Development)
 
-Do a small thing. Prove it works. Commit. Repeat.
+SPEC → EXECUTE → EVALUATE → COMMIT → LEARN. Never commit without proof.
 
-Never fire-and-forget — every piece gets verified before the next starts. Use `asd run` / `just` recipes, never raw commands. One concern per session. If tests fail after your commit, you broke them. Find root causes autonomously, no temporary fixes.
+Build layer by layer. Each layer is grounded in proof — reusable, reproducible proof that both human and AI can verify. The `asd run` commands are the shared language: the human calls them, CI runs them, the AI agent uses them. This common vocabulary is what makes sophisticated systems possible.
 
-### The Feedback Loop
+### The Loop
 
-| Step          | What                                                      | Skill                        |
-| ------------- | --------------------------------------------------------- | ---------------------------- |
-| Plan          | Break work into pieces with checkpoints                   | `/plan-with-checkpoints`     |
-| Implement     | Small increments, show result, wait for feedback          | `/feedback-driven-dev`       |
-| Diagnose      | Symptom → root cause → fix → verify (never "just fix it") | `/bug-diagnosis`             |
-| Test          | Automated test→fix→retest cycle (max 5 iterations)        | `/iterative-test-agent`      |
-| Review        | Check changed files for bugs, security, quality           | `/code-review-agent`         |
-| UI verify     | Playwright helpers for Angular + DaisyUI + Supabase       | `/angular-ui-testing`        |
-| Visual check  | Baseline screenshots + pixel-diff                         | `/angular-visual-regression` |
-| User journey  | Full flow simulation: signup → dashboard → purchase       | `/angular-user-journey`      |
-| Accessibility | WCAG audit with severity-ranked fixes                     | `/accessibility-check`       |
-| Performance   | Lighthouse scoring against thresholds                     | `/lighthouse-audit`          |
-| Health check  | Detect anti-patterns mid-session (stuck, no commits)      | `/session-health-check`      |
+1. **SPEC** — Define expected output BEFORE writing code. What should the user see? What response? What DB state?
+2. **EXECUTE** — Small increment. Use `asd run` / `just` recipes, never raw commands. One concern at a time.
+3. **EVALUATE** — Prove it works through the user's eyes (see Evaluation below). If any layer fails, fix before proceeding.
+4. **COMMIT** — Only when evaluation passes. `asd run check` clean + tests green.
+5. **LEARN** — Failed evaluations become new test cases. Corrections go to `tasks/lessons.md`.
+
+### Evaluation: Simulate the Human
+
+Always verify from the human's perspective — what they see, what they run, what they expect.
+
+| Layer         | Prove what                   | How                                           | Reproducible via            |
+| ------------- | ---------------------------- | --------------------------------------------- | --------------------------- |
+| Static        | Code compiles                | `asd run check`                               | CI workflow                 |
+| Unit          | Logic is correct             | `asd run test-run`                            | CI workflow                 |
+| UI            | User sees the right thing    | MCP Playwright — navigate, screenshot, assert | `asd run test-e2e-chromium` |
+| Journey       | User can complete their goal | `/angular-user-journey`                       | `asd run test-e2e-chromium` |
+| Visual        | UI looks the same            | `/angular-visual-regression`                  | CI baseline comparison      |
+| Accessibility | All users can use it         | `/accessibility-check`                        | CI a11y audit               |
+| Performance   | Page loads fast              | `/lighthouse-audit`                           | CI performance budget       |
+| Network       | Backend actually works       | Playwright route interception, curl, DB query | `asd run test-payment`      |
+| CI            | Nothing broke upstream       | `gh run list --workflow=tests`                | GitHub Actions              |
+
+**The goal:** Every proof the AI produces should be expressible as a command the human can run. Translate proof into CI workflows. Commands and recipes are the shared language.
+
+**Anti-patterns:**
+
+- A 200 status is not proof — verify the response body and downstream effects.
+- A passing unit test is not proof — verify the UI renders correctly.
+- A green local test is not proof — confirm CI passes after push (`gh run list`).
+
+### Skills
+
+| Step                          | Skill                        |
+| ----------------------------- | ---------------------------- |
+| Plan with checkpoints         | `/plan-with-checkpoints`     |
+| Incremental implementation    | `/feedback-driven-dev`       |
+| Root cause diagnosis          | `/bug-diagnosis`             |
+| Test→fix→retest cycle         | `/iterative-test-agent`      |
+| Code review (>80% confidence) | `/code-review-agent`         |
+| Playwright UI helpers         | `/angular-ui-testing`        |
+| Visual regression baselines   | `/angular-visual-regression` |
+| Full user journey simulation  | `/angular-user-journey`      |
+| WCAG accessibility audit      | `/accessibility-check`       |
+| Lighthouse performance audit  | `/lighthouse-audit`          |
+| Anti-pattern detection        | `/session-health-check`      |
 
 ### Working Rules
 
+- **Spec first** — Define expected output before writing code. No spec = no commit.
 - **Plan first** — Plan mode for 3+ step tasks. Re-plan if things go sideways.
+- **Simulate the user** — Every verification must answer: "would the human see this working?"
+- **Shared commands** — Use `asd run` / `just` recipes. They work for human, AI, and CI alike.
+- **CI confirmation** — After push, run `gh run list` to confirm pipeline passes.
 - **Subagents** — Offload research to keep main context clean.
 - **Autonomous** — Fix bugs, failing CI, errors without being told how.
-- **Learn** — Capture corrections in `tasks/lessons.md`.
-- **Task management** — Plan in `tasks/todo.md`, check in before implementing, never mark done without proof.
+- **Learn** — Failed evals become new tests. Corrections go to `tasks/lessons.md`.
+- **Task management** — Human creates tasks in `tasks/`, GitHub issues, or Redmine (via MCP). AI checks in before implementing, never marks done without proof.
 
 ## Commands
 
