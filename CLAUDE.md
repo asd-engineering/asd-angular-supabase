@@ -2,7 +2,33 @@
 
 ## FDAID (Feedback-Driven AI Development)
 
-Verify in layers (status → body → network → UI → integration). Use `asd run` / `just` recipes, never raw commands. Commit every 2-3 pieces, one concern per session. Run tests before AND after — if they fail after your commit, you broke them. Find root causes autonomously, no temporary fixes.
+Do a small thing. Prove it works. Commit. Repeat.
+
+Never fire-and-forget — every piece gets verified before the next starts. Use `asd run` / `just` recipes, never raw commands. One concern per session. If tests fail after your commit, you broke them. Find root causes autonomously, no temporary fixes.
+
+### The Feedback Loop
+
+| Step          | What                                                      | Skill                        |
+| ------------- | --------------------------------------------------------- | ---------------------------- |
+| Plan          | Break work into pieces with checkpoints                   | `/plan-with-checkpoints`     |
+| Implement     | Small increments, show result, wait for feedback          | `/feedback-driven-dev`       |
+| Diagnose      | Symptom → root cause → fix → verify (never "just fix it") | `/bug-diagnosis`             |
+| Test          | Automated test→fix→retest cycle (max 5 iterations)        | `/iterative-test-agent`      |
+| Review        | Check changed files for bugs, security, quality           | `/code-review-agent`         |
+| UI verify     | Playwright helpers for Angular + DaisyUI + Supabase       | `/angular-ui-testing`        |
+| Visual check  | Baseline screenshots + pixel-diff                         | `/angular-visual-regression` |
+| User journey  | Full flow simulation: signup → dashboard → purchase       | `/angular-user-journey`      |
+| Accessibility | WCAG audit with severity-ranked fixes                     | `/accessibility-check`       |
+| Performance   | Lighthouse scoring against thresholds                     | `/lighthouse-audit`          |
+| Health check  | Detect anti-patterns mid-session (stuck, no commits)      | `/session-health-check`      |
+
+### Working Rules
+
+- **Plan first** — Plan mode for 3+ step tasks. Re-plan if things go sideways.
+- **Subagents** — Offload research to keep main context clean.
+- **Autonomous** — Fix bugs, failing CI, errors without being told how.
+- **Learn** — Capture corrections in `tasks/lessons.md`.
+- **Task management** — Plan in `tasks/todo.md`, check in before implementing, never mark done without proof.
 
 ## Commands
 
@@ -112,14 +138,6 @@ Workflows in `.github/workflows/`: `build`, `linting`, `format`, `tests`, `dupli
 ## Hooks (AI Safety)
 
 Project hooks in `.claude/hooks/`: **asd-guard.sh** (prompts before internet exposure), **inject-ai-session.sh** (audit trail on tickets), **asd-validator.sh** (blocks hallucinated ASD subcommands). Global hooks in `~/.claude/hooks/` guard git/GitHub operations.
-
-## Working Style
-
-- **Plan first** — Plan mode for 3+ step tasks. Re-plan if things go sideways.
-- **Subagents** — Offload research to keep main context clean.
-- **Autonomous** — Fix bugs, failing CI, errors without being told how.
-- **Learn** — Capture corrections in `tasks/lessons.md`.
-- **Task management** — Plan in `tasks/todo.md`, check in before implementing, never mark done without proof.
 
 ## Git Conventions
 
