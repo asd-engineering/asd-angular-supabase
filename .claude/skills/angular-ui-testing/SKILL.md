@@ -1,8 +1,8 @@
 ---
 name: angular-ui-testing
-description: Reusable MCP Playwright code snippets for testing this Angular + DaisyUI + Supabase app — auth helpers, form filling, toast checking, table extraction
-user_invocable: true
-arg_description: "What to test, e.g. 'login form', 'dashboard orders table', 'auth guard redirect'"
+description: Reusable Playwright snippets for this Angular + DaisyUI + Supabase app — auth helpers, form filling, toast checking, table extraction. Use when writing or debugging Playwright tests.
+argument-hint: <what to test>
+user-invocable: true
 ---
 
 # Angular UI Testing Helpers

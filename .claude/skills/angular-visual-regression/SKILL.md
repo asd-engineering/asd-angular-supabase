@@ -1,8 +1,8 @@
 ---
 name: angular-visual-regression
-description: Capture baseline screenshots of all app pages and pixel-diff on subsequent runs to detect unintended UI changes
-user_invocable: true
-arg_description: 'Action: baseline | diff | single <page> (default: baseline)'
+description: Capture baseline screenshots of all app pages and pixel-diff on subsequent runs to detect unintended UI changes. Use when verifying visual consistency after CSS or layout changes.
+argument-hint: baseline | diff | single <page>
+user-invocable: true
 ---
 
 # Angular Visual Regression Testing
