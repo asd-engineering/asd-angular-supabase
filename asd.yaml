@@ -204,6 +204,8 @@ automation:
     - run: pnpm exec playwright test --project=webkit
   test-e2e-report:
     - run: pnpm exec playwright show-report
+  test-payment:
+    - run: pnpm exec playwright test e2e/payment-webhook.spec.ts --project=chromium
 
   # Duplication
   duplication:
