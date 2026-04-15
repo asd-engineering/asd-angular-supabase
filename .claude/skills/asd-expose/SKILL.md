@@ -1,8 +1,8 @@
 ---
 name: asd-expose
-description: Guide for exposing services via ASD tunnels — asd expose, asd.yaml network config, with/without Caddy, auth rules
-user_invocable: true
-arg_description: "What to expose, e.g. 'port 3000', 'angular dev server', 'expose without caddy', 'add tunnel to asd.yaml'"
+description: Expose services via ASD tunnels — asd expose, asd.yaml network config, with/without Caddy, auth rules. Use when exposing a port, sharing a local service, or configuring tunnel networking.
+argument-hint: <what to expose>
+user-invocable: true
 ---
 
 # ASD Expose — Service Exposure Guide

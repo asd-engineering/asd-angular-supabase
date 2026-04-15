@@ -1,8 +1,8 @@
 ---
 name: angular-visual-regression
-description: Capture baseline screenshots of all app pages and pixel-diff on subsequent runs to detect unintended UI changes
-user_invocable: true
-arg_description: 'Action: baseline | diff | single <page> (default: baseline)'
+description: Capture baseline screenshots of all app pages and pixel-diff on subsequent runs to detect unintended UI changes. Use when verifying visual consistency after CSS or layout changes.
+argument-hint: baseline | diff | single <page>
+user-invocable: true
 ---
 
 # Angular Visual Regression Testing
@@ -37,18 +37,16 @@ Capture baseline screenshots of every page in the ASD Angular Supabase app, then
     (pixel-diff images, only for pages with changes)
 ```
 
-## Page Matrix
+## Page Discovery
 
-| Page               | URL                   | Render Mode | Auth Required | Key Elements to Wait For                                                   |
-| ------------------ | --------------------- | ----------- | ------------- | -------------------------------------------------------------------------- |
-| Home               | `/`                   | Prerender   | No            | `h1.text-5xl`, `.btn.btn-primary`                                          |
-| Pricing            | `/pricing`            | Prerender   | No            | `h1:has-text("Pricing")`, `.card` (3x)                                     |
-| Auth Login         | `/auth/login`         | Prerender   | No            | `h2:has-text("Sign In")`, `input#email`                                    |
-| Auth Signup        | `/auth/signup`        | Prerender   | No            | `h2:has-text("Create Account")`, `input#email`                             |
-| Dashboard          | `/dashboard`          | Client      | Yes           | `h1:has-text("Dashboard")`, `.stat-card`                                   |
-| Dashboard Orders   | `/dashboard/orders`   | Client      | Yes           | `h2:has-text("Order History")`, `table.table` OR `:text("No orders yet.")` |
-| Dashboard Settings | `/dashboard/settings` | Client      | Yes           | `h2:has-text("Account Settings")`, `.btn.btn-error`                        |
-| Payment Callback   | `/payment/callback`   | Client      | No            | `h1:has-text("Payment Submitted")`                                         |
+Read `src/app/app.routes.ts` and `src/app/app.routes.server.ts` to build the page matrix dynamically. For each route, determine:
+
+- **URL** — from the route path
+- **Render mode** — from `app.routes.server.ts` (`RenderMode.Prerender` vs `RenderMode.Client`)
+- **Auth required** — routes under a guard (check `canActivate`) need login first
+- **Key elements** — navigate to the page and identify the primary heading/content element to wait for
+
+Capture public pages first (no auth), then login and capture protected pages.
 
 ## Actions
 

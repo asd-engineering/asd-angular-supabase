@@ -1,8 +1,8 @@
 ---
 name: angular-user-journey
-description: Simulate full user journeys (signup -> login -> dashboard -> purchase) via MCP Playwright with screenshots and timing at each step
-user_invocable: true
-arg_description: 'Journey name: full | signup | login | purchase | dashboard (default: full)'
+description: Simulate full user journeys (signup -> login -> dashboard -> purchase) via Playwright with screenshots and timing at each step. Use when verifying end-to-end flows work correctly.
+argument-hint: full | signup | login | purchase | dashboard
+user-invocable: true
 ---
 
 # Angular User Journey Simulation
