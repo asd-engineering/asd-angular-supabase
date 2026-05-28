@@ -9,11 +9,13 @@ on:
 
 jobs:
   e2e-tests:
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.LINUX_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 20
     env:
       ASD_API_KEY: ${{ secrets.ASD_API_KEY }}
       MOLLIE_API_KEY: ${{ secrets.MOLLIE_API_KEY }}
+      RCLONE_CONF_B64: ${{ secrets.RCLONE_CONF_B64 }}
+      NAS_DEST: ${{ secrets.NAS_DEST }}
     steps:
       - uses: actions/checkout@v4
 
@@ -107,16 +109,18 @@ jobs:
 
       - name: Upload test results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: asd-engineering/artifact-nas/upload@v1.4.4
         with:
+          mode: nas-first
           name: playwright-report
           path: playwright-report/
           retention-days: 30
 
       - name: Upload test artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: asd-engineering/artifact-nas/upload@v1.4.4
         with:
+          mode: nas-first
           name: test-results
           path: test-results/
           retention-days: 30
