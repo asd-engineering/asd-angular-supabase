@@ -9,7 +9,7 @@ on:
 
 jobs:
   e2e-tests:
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.LINUX_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 20
     env:
       ASD_API_KEY: ${{ secrets.ASD_API_KEY }}
